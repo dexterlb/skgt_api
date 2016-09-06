@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/url"
+	"strconv"
 
 	"github.com/DexterLB/htmlparsing"
 	"github.com/jbowtie/gokogiri/xml"
@@ -13,6 +14,7 @@ const pageURL = "https://skgt-bg.com/VirtualBoard/Web/SelectByStop.aspx"
 
 type StopData struct {
 	Parameters map[string]string
+	Lines      map[int]string
 	client     *htmlparsing.Client
 }
 
@@ -48,12 +50,46 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 
 	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
 
+	lines, err := getLines(page)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get lines: %s", err)
+	}
+
 	data := &StopData{
 		client:     client,
 		Parameters: parameters,
+		Lines:      lines,
 	}
 
 	return data, fmt.Errorf("not implemented")
+}
+
+func getLines(page xml.Node) (map[int]string, error) {
+	options, err := page.Search(
+		`//select/option[@value != ""]`,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to find selector options: %s", err)
+	}
+
+	lines := make(map[int]string)
+
+	for i := range options {
+		value, ok := options[i].Attributes()["value"]
+		if !ok {
+			return nil, fmt.Errorf("option element has no value")
+		}
+
+		id, err := strconv.Atoi(value.Value())
+		if err != nil {
+			return nil, fmt.Errorf("option value is not integer: %s", err)
+		}
+
+		lines[id] = options[i].Content()
+	}
+
+	return lines, nil
 }
 
 func getFormValues(page xml.Node) (map[string]string, error) {

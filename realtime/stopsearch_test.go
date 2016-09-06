@@ -8,7 +8,7 @@ import (
 )
 
 func TestLookupStop(t *testing.T) {
-	data, err := LookupStop(htmlparsing.SensibleSettings(), 2045)
+	data, err := LookupStop(htmlparsing.SensibleSettings(), 2327)
 	if err != nil {
 		t.Error(err)
 	}
