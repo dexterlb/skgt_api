@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 
 const pageURL = "https://skgt-bg.com/VirtualBoard/Web/SelectByStop.aspx"
 const captchaURL = "https://skgt-bg.com/VirtualBoard/Services/Captcha.ashx"
+
+var location, _ = time.LoadLocation("Europe/Sofia")
 
 type StopData struct {
 	Parameters    map[string]string
@@ -38,6 +41,7 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get line info page: %s", err)
 	}
+	defer page.Free()
 
 	rows, err := page.Search(
 		`//table[contains(@id,"ctl00_ContentPlaceHolder1_gvTimes")]/tr[not(contains(@class, "Header"))]`,
@@ -82,7 +86,54 @@ func parseArrival(row xml.Node) (*Arrival, error) {
 
 	arrival.AirConditioning = (len(airConditioningMarkers) > 0)
 
+	timeString, err := htmlparsing.First(
+		row,
+		`.//div[contains(@id, "dvItem")]`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find arrival time: %s", err)
+	}
+
+	arrival.Time, arrival.Calculated, err = parseArrivalTime(timeString.Content())
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse arrival time: %s", err)
+	}
+
 	return arrival, nil
+}
+
+func parseArrivalTime(input string) (time.Time, time.Time, error) {
+	groups := regexp.MustCompile(
+		`([\d]+)\:([\d]+) изчислено в. ([\d]+\:[\d]+ [\d]+\.[\d]+\.[\d]+)`,
+	).FindStringSubmatch(input)
+	if len(groups) < 4 {
+		return time.Time{}, time.Time{}, fmt.Errorf("unable to find time")
+	}
+
+	calculated, err := time.ParseInLocation("15:04 02.01.2006", groups[3], location)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("unable to parse calculated time: %s", err)
+	}
+
+	hour, err := strconv.Atoi(groups[1])
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("unable to parse arrival time hour: %s", err)
+	}
+
+	minute, err := strconv.Atoi(groups[2])
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("unable to parse arrival time minute: %s", err)
+	}
+
+	year, month, day := calculated.Date()
+
+	arrival := time.Date(year, month, day, hour, minute, 0, 0, location)
+	if arrival.Before(calculated) {
+		day += 1
+		arrival = time.Date(year, month, day, hour, minute, 0, 0, location)
+	}
+
+	return arrival, calculated, nil
 }
 
 func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
@@ -95,6 +146,7 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse search page: %s", err)
 	}
+	defer page.Free()
 
 	parameters, err := getFormValues(page)
 	if err != nil {
@@ -109,6 +161,7 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse selection page: %s", err)
 	}
+	defer page.Free()
 
 	parameters, err = getFormValues(page)
 	if err != nil {
