@@ -2,20 +2,87 @@ package realtime
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/DexterLB/htmlparsing"
 	"github.com/jbowtie/gokogiri/xml"
 )
 
 const pageURL = "https://skgt-bg.com/VirtualBoard/Web/SelectByStop.aspx"
+const captchaURL = "https://skgt-bg.com/VirtualBoard/Services/Captcha.ashx"
 
 type StopData struct {
-	Parameters map[string]string
-	Lines      map[int]string
-	client     *htmlparsing.Client
+	Parameters    map[string]string
+	Lines         map[int]string
+	Captcha       io.Reader
+	CaptchaResult string
+	client        *htmlparsing.Client
+}
+
+type Arrival struct {
+	Time            time.Time
+	Calculated      time.Time
+	AirConditioning bool
+	Accessibility   bool
+}
+
+func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
+	s.Parameters["ctl00$ContentPlaceHolder1$ddlLine"] = fmt.Sprintf("%d", lineID)
+	s.Parameters["ctl00$ContentPlaceHolder1$CaptchaInput"] = s.CaptchaResult
+
+	page, err := s.client.ParsePage(pageURL, urlValues(s.Parameters))
+	if err != nil {
+		return nil, fmt.Errorf("cannot get line info page: %s", err)
+	}
+
+	rows, err := page.Search(
+		`//table[contains(@id,"ctl00_ContentPlaceHolder1_gvTimes")]/tr[not(contains(@class, "Header"))]`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get arrivals table rows: %s", err)
+	}
+
+	arrivals := make([]*Arrival, len(rows))
+	for i := range rows {
+		arrivals[i], err = parseArrival(rows[i])
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse arrival: %s", err)
+		}
+	}
+
+	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
+
+	return arrivals, nil
+}
+
+func parseArrival(row xml.Node) (*Arrival, error) {
+	arrival := &Arrival{}
+
+	accessibilityMarkers, err := row.Search(
+		`.//img[contains(@id, "imgPlatform")]`,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to search for accessibility markers: %s", err)
+	}
+
+	arrival.Accessibility = (len(accessibilityMarkers) > 0)
+
+	airConditioningMarkers, err := row.Search(
+		`.//img[contains(@id, "imgAirCondition")]`,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to search for air conditioning markers: %s", err)
+	}
+
+	arrival.AirConditioning = (len(airConditioningMarkers) > 0)
+
+	return arrival, nil
 }
 
 func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
@@ -48,20 +115,33 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 		return nil, fmt.Errorf("unable to get hidden values: %s", err)
 	}
 
-	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
-
 	lines, err := getLines(page)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get lines: %s", err)
 	}
 
+	captcha, err := getCaptcha(client)
+	if err != nil {
+		return nil, err
+	}
+
 	data := &StopData{
 		client:     client,
 		Parameters: parameters,
+		Captcha:    captcha,
 		Lines:      lines,
 	}
 
-	return data, fmt.Errorf("not implemented")
+	return data, nil
+}
+
+func getCaptcha(client *htmlparsing.Client) (io.Reader, error) {
+	response, err := client.Get(captchaURL)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get captcha: %s", err)
+	}
+
+	return response.Body, nil
 }
 
 func getLines(page xml.Node) (map[int]string, error) {
@@ -127,8 +207,6 @@ func urlValues(parameters map[string]string) url.Values {
 	for key := range parameters {
 		values.Set(key, parameters[key])
 	}
-
-	fmt.Printf("values: %v\n", values)
 
 	return values
 }
