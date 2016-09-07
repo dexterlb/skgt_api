@@ -20,7 +20,7 @@ var location, _ = time.LoadLocation("Europe/Sofia")
 
 type StopData struct {
 	Parameters    map[string]string
-	Lines         map[int]string
+	Lines         map[Line]int
 	Captcha       io.Reader
 	CaptchaResult string
 	client        *htmlparsing.Client
@@ -43,6 +43,11 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	}
 	defer page.Free()
 
+	s.Parameters, err = getFormValues(page)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get POST parameters: %s", err)
+	}
+
 	rows, err := page.Search(
 		`//table[contains(@id,"ctl00_ContentPlaceHolder1_gvTimes")]/tr[not(contains(@class, "Header"))]`,
 	)
@@ -61,6 +66,28 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
 
 	return arrivals, nil
+}
+
+func (s *StopData) LoadCaptcha() error {
+	var err error
+	s.Captcha, err = getCaptcha(s.client)
+	return err
+}
+
+func (s *StopData) BreakCaptcha() error {
+	err := s.LoadCaptcha()
+	if err != nil {
+		return fmt.Errorf("unable to load captcha: %s", err)
+	}
+
+	result, err := htmlparsing.BreakSimpleCaptcha(s.Captcha)
+	if err != nil {
+		return fmt.Errorf("unable to break captcha: %s", err)
+	}
+
+	s.CaptchaResult = result
+
+	return nil
 }
 
 func parseArrival(row xml.Node) (*Arrival, error) {
@@ -173,15 +200,9 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 		return nil, fmt.Errorf("unable to get lines: %s", err)
 	}
 
-	captcha, err := getCaptcha(client)
-	if err != nil {
-		return nil, err
-	}
-
 	data := &StopData{
 		client:     client,
 		Parameters: parameters,
-		Captcha:    captcha,
 		Lines:      lines,
 	}
 
@@ -197,7 +218,7 @@ func getCaptcha(client *htmlparsing.Client) (io.Reader, error) {
 	return response.Body, nil
 }
 
-func getLines(page xml.Node) (map[int]string, error) {
+func getLines(page xml.Node) (map[Line]int, error) {
 	options, err := page.Search(
 		`//select/option[@value != ""]`,
 	)
@@ -206,7 +227,7 @@ func getLines(page xml.Node) (map[int]string, error) {
 		return nil, fmt.Errorf("unable to find selector options: %s", err)
 	}
 
-	lines := make(map[int]string)
+	lines := make(map[Line]int)
 
 	for i := range options {
 		value, ok := options[i].Attributes()["value"]
@@ -219,7 +240,12 @@ func getLines(page xml.Node) (map[int]string, error) {
 			return nil, fmt.Errorf("option value is not integer: %s", err)
 		}
 
-		lines[id] = options[i].Content()
+		line, err := parseLine(options[i].Content())
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse line: %s", err)
+		}
+
+		lines[*line] = id
 	}
 
 	return lines, nil
