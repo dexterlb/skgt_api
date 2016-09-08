@@ -199,7 +199,6 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to get lines: %s", err)
 	}
-
 	data := &StopData{
 		client:     client,
 		Parameters: parameters,
