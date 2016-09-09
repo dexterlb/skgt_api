@@ -3,7 +3,6 @@ package realtime
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 )
 
 //go:generate jsonenums -type=Transport
@@ -17,12 +16,12 @@ const (
 
 type Line struct {
 	Type   Transport
-	Number int
+	Number string // Why string? For example "4 ТМ"
 }
 
 func parseLine(input string) (*Line, error) {
 	groups := regexp.MustCompile(
-		`(.+) ([\d]+)`,
+		`([^\s]+) (.+)`,
 	).FindStringSubmatch(input)
 	if len(groups) < 3 {
 		return nil, fmt.Errorf("unable to parse line info [%s]", input)
@@ -41,11 +40,7 @@ func parseLine(input string) (*Line, error) {
 		return nil, fmt.Errorf("unknown transport type [%s]", groups[0])
 	}
 
-	var err error
-	line.Number, err = strconv.Atoi(groups[2])
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse line number: %s", err)
-	}
+	line.Number = groups[2]
 
 	return line, nil
 }
