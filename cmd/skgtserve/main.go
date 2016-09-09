@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/DexterLB/htmlparsing"
-	"github.com/DexterLB/skgthack/realtime"
+	"github.com/DexterLB/skgt_api/realtime"
 )
 
 func stopSearch(w http.ResponseWriter, req *http.Request) {
@@ -27,11 +27,25 @@ func stopSearch(w http.ResponseWriter, req *http.Request) {
 
 	arrivals, err := realtime.AllArrivals(htmlparsing.SensibleSettings(), stop)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to get data: %s", err), 500)
+		http.Error(w, fmt.Sprintf("unable to get stop arrivals: %s", err), 500)
 		return
 	}
 
-	data, err := json.MarshalIndent(arrivals, "", "    ")
+	info, err := realtime.GetStopInfo(htmlparsing.SensibleSettings(), stop)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to get stop info: %s", err), 500)
+		return
+	}
+
+	object := &struct {
+		Stop     *realtime.StopInfo
+		Arrivals []*realtime.LineArrivals
+	}{
+		Stop:     info,
+		Arrivals: arrivals,
+	}
+
+	data, err := json.MarshalIndent(object, "", "    ")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("unable to marshal data: %s", err), 500)
 		return

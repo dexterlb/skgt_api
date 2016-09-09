@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/DexterLB/htmlparsing"
@@ -24,6 +25,8 @@ type StopData struct {
 	Captcha       io.Reader
 	CaptchaResult string
 	client        *htmlparsing.Client
+	Name          string
+	Description   string
 }
 
 type Arrival struct {
@@ -63,8 +66,6 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 		}
 	}
 
-	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
-
 	return arrivals, nil
 }
 
@@ -88,6 +89,71 @@ func (s *StopData) BreakCaptcha() error {
 	s.CaptchaResult = result
 
 	return nil
+}
+
+func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
+	client, err := htmlparsing.NewCookiedClient(settings)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialise http client: %s", err)
+	}
+
+	page, err := client.ParsePage(pageURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse search page: %s", err)
+	}
+	defer page.Free()
+
+	parameters, err := getFormValues(page)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get hidden values: %s", err)
+	}
+
+	parameters["ctl00$ContentPlaceHolder1$tbStopCode"] = fmt.Sprintf("%04d", id)
+	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.x"] = fmt.Sprintf("%d", rand.Intn(53))
+	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.y"] = fmt.Sprintf("%d", rand.Intn(16))
+
+	page, err = client.ParsePage(pageURL, urlValues(parameters))
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse selection page: %s", err)
+	}
+	defer page.Free()
+
+	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
+
+	stopName, err := htmlparsing.First(
+		page,
+		`//span[contains(@id, 'lblStopName')]`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get stop name: %s", err)
+	}
+
+	stopDescription, err := htmlparsing.First(
+		page,
+		`//span[contains(@id, 'lblDescription')]`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get stop description: %s", err)
+	}
+
+	parameters, err = getFormValues(page)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get hidden values: %s", err)
+	}
+
+	lines, err := getLines(page)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get lines: %s", err)
+	}
+	data := &StopData{
+		client:      client,
+		Parameters:  parameters,
+		Lines:       lines,
+		Name:        stopName.Content(),
+		Description: strings.Trim(stopDescription.Content(), "\r\n\t \";"),
+	}
+
+	return data, nil
 }
 
 func parseArrival(row xml.Node) (*Arrival, error) {
@@ -161,51 +227,6 @@ func parseArrivalTime(input string) (time.Time, time.Time, error) {
 	}
 
 	return arrival, calculated, nil
-}
-
-func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
-	client, err := htmlparsing.NewCookiedClient(settings)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialise http client: %s", err)
-	}
-
-	page, err := client.ParsePage(pageURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse search page: %s", err)
-	}
-	defer page.Free()
-
-	parameters, err := getFormValues(page)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get hidden values: %s", err)
-	}
-
-	parameters["ctl00$ContentPlaceHolder1$tbStopCode"] = fmt.Sprintf("%04d", id)
-	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.x"] = fmt.Sprintf("%d", rand.Intn(53))
-	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.y"] = fmt.Sprintf("%d", rand.Intn(16))
-
-	page, err = client.ParsePage(pageURL, urlValues(parameters))
-	if err != nil {
-		return nil, fmt.Errorf("cannot parse selection page: %s", err)
-	}
-	defer page.Free()
-
-	parameters, err = getFormValues(page)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get hidden values: %s", err)
-	}
-
-	lines, err := getLines(page)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get lines: %s", err)
-	}
-	data := &StopData{
-		client:     client,
-		Parameters: parameters,
-		Lines:      lines,
-	}
-
-	return data, nil
 }
 
 func getCaptcha(client *htmlparsing.Client) (io.Reader, error) {

@@ -61,3 +61,22 @@ func AllArrivals(settings *htmlparsing.Settings, stopID int) ([]*LineArrivals, e
 
 	return lineArrivals, nil
 }
+
+type StopInfo struct {
+	ID          int
+	Name        string
+	Description string
+}
+
+func GetStopInfo(settings *htmlparsing.Settings, stopID int) (*StopInfo, error) {
+	data, err := LookupStop(settings, stopID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get stop data: %s", err)
+	}
+
+	return &StopInfo{
+		ID:          stopID,
+		Name:        data.Name,
+		Description: data.Description,
+	}, nil
+}
