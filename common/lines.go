@@ -1,4 +1,4 @@
-package realtime
+package common
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ type Line struct {
 	Number string // Why string? For example "4 ТМ"
 }
 
-func parseLine(input string) (*Line, error) {
+func ParseLine(input string) (*Line, error) {
 	groups := regexp.MustCompile(
 		`([^\s]+) (.+)`,
 	).FindStringSubmatch(input)

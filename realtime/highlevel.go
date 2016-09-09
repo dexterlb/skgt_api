@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/DexterLB/htmlparsing"
+	"github.com/DexterLB/skgt_api/common"
 )
 
-func Arrivals(settings *htmlparsing.Settings, stopID int, line *Line) ([]*Arrival, error) {
+func Arrivals(settings *htmlparsing.Settings, stopID int, line *common.Line) ([]*Arrival, error) {
 	data, err := LookupStop(settings, stopID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get stop data: %s", err)
@@ -26,7 +27,7 @@ func Arrivals(settings *htmlparsing.Settings, stopID int, line *Line) ([]*Arriva
 }
 
 type LineArrivals struct {
-	Line     *Line
+	Line     *common.Line
 	Arrivals []*Arrival
 }
 
@@ -51,7 +52,7 @@ func AllArrivals(settings *htmlparsing.Settings, stopID int) ([]*LineArrivals, e
 		}
 
 		lineArrivals[i] = &LineArrivals{
-			Line:     &Line{},
+			Line:     &common.Line{},
 			Arrivals: arrivals,
 		}
 		*(lineArrivals[i].Line) = line

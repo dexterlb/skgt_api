@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/DexterLB/htmlparsing"
+	"github.com/DexterLB/skgt_api/common"
 	"github.com/jbowtie/gokogiri/xml"
 )
 
@@ -21,7 +22,7 @@ var location, _ = time.LoadLocation("Europe/Sofia")
 
 type StopData struct {
 	Parameters    map[string]string
-	Lines         map[Line]int
+	Lines         map[common.Line]int
 	Captcha       io.Reader
 	CaptchaResult string
 	client        *htmlparsing.Client
@@ -238,7 +239,7 @@ func getCaptcha(client *htmlparsing.Client) (io.Reader, error) {
 	return response.Body, nil
 }
 
-func getLines(page xml.Node) (map[Line]int, error) {
+func getLines(page xml.Node) (map[common.Line]int, error) {
 	options, err := page.Search(
 		`//select/option[@value != ""]`,
 	)
@@ -247,7 +248,7 @@ func getLines(page xml.Node) (map[Line]int, error) {
 		return nil, fmt.Errorf("unable to find selector options: %s", err)
 	}
 
-	lines := make(map[Line]int)
+	lines := make(map[common.Line]int)
 
 	for i := range options {
 		value, ok := options[i].Attributes()["value"]
@@ -260,7 +261,7 @@ func getLines(page xml.Node) (map[Line]int, error) {
 			return nil, fmt.Errorf("option value is not integer: %s", err)
 		}
 
-		line, err := parseLine(options[i].Content())
+		line, err := common.ParseLine(options[i].Content())
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse line: %s", err)
 		}
