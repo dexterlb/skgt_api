@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/DexterLB/htmlparsing"
+	"github.com/DexterLB/skgt_api/common"
 )
 
 func prettyPrint(t *testing.T, data interface{}, w io.Writer) {
@@ -26,9 +27,9 @@ func TestArrivals(t *testing.T) {
 	arrivals, err := Arrivals(
 		htmlparsing.SensibleSettings(),
 		2045,
-		&Line{
-			Type:   Tram,
-			Number: 10,
+		&common.Line{
+			Type:   common.Tram,
+			Number: "10",
 		},
 	)
 
