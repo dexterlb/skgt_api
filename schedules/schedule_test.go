@@ -38,3 +38,23 @@ func TestGetSchedule(t *testing.T) {
 
 	prettyPrint(t, schedule, os.Stdout)
 }
+
+func TestAllLines(t *testing.T) {
+	lines, err := AllLines(htmlparsing.SensibleSettings())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prettyPrint(t, lines, os.Stdout)
+}
+
+func TestAllSchedules(t *testing.T) {
+	schedules, err := AllSchedules(htmlparsing.SensibleSettings())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prettyPrint(t, schedules, os.Stdout)
+}

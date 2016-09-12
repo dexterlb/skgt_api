@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/DexterLB/htmlparsing"
 	"github.com/DexterLB/skgt_api/common"
@@ -80,4 +81,55 @@ func GetStopInfo(settings *htmlparsing.Settings, stopID int) (*StopInfo, error) 
 		Name:        data.Name,
 		Description: data.Description,
 	}, nil
+}
+
+func GetStopsInfo(settings *htmlparsing.Settings, stops []int, parallelRequests int) ([]*StopInfo, error) {
+	in := make(chan int)
+	out := make(chan *StopInfo)
+	errors := make(chan error)
+
+	go func() {
+		for i := range stops {
+			in <- stops[i]
+		}
+		close(in)
+	}()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(parallelRequests)
+	for i := 0; i < parallelRequests; i++ {
+		go func() {
+			defer wg.Done()
+
+			for stop := range in {
+				info, err := GetStopInfo(settings, stop)
+				if err != nil {
+					errors <- err
+				} else {
+					out <- info
+				}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	infos := make([]*StopInfo, len(stops))
+	go func() {
+		i := 0
+		for info := range out {
+			infos[i] = info
+			i++
+		}
+		close(errors)
+	}()
+
+	for err := range errors {
+		return nil, fmt.Errorf("unable to get stop info: %s", err)
+	}
+
+	return infos, nil
 }

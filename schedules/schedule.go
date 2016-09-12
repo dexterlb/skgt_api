@@ -45,8 +45,6 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 		return nil, fmt.Errorf("unable to parse schedule page: %s", err)
 	}
 
-	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
-
 	typeDivs, err := page.Search(
 		`//div[contains(@class, 'schedule_active_list_content')]`,
 	)

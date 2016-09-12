@@ -119,8 +119,6 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	}
 	defer page.Free()
 
-	htmlparsing.DumpHTML(page, "/tmp/bleh.html")
-
 	stopName, err := htmlparsing.First(
 		page,
 		`//span[contains(@id, 'lblStopName')]`,

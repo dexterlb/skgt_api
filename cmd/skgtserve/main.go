@@ -8,7 +8,50 @@ import (
 
 	"github.com/DexterLB/htmlparsing"
 	"github.com/DexterLB/skgt_api/realtime"
+	"github.com/DexterLB/skgt_api/schedules"
 )
+
+func info(w http.ResponseWriter, req *http.Request) {
+	parameters := req.URL.Query()
+
+	key := parameters.Get("key")
+	if key != "42" {
+		http.Error(w, "fuck you", 403)
+		return
+	}
+
+	scheduleInfos, err := schedules.AllSchedules(htmlparsing.SensibleSettings())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to get schedules: %s", err), 500)
+		return
+	}
+
+	stopInfos, err := realtime.GetStopsInfo(
+		htmlparsing.SensibleSettings(),
+		schedules.GetStops(scheduleInfos),
+		8,
+	)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to get stops: %s", err), 500)
+		return
+	}
+
+	object := &struct {
+		Stops     []*realtime.StopInfo
+		Schedules []*schedules.ScheduleInfo
+	}{
+		Stops:     stopInfos,
+		Schedules: scheduleInfos,
+	}
+
+	data, err := json.MarshalIndent(object, "", "    ")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to marshal data: %s", err), 500)
+		return
+	}
+
+	fmt.Fprintf(w, string(data))
+}
 
 func stopSearch(w http.ResponseWriter, req *http.Request) {
 	parameters := req.URL.Query()
@@ -55,6 +98,7 @@ func stopSearch(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/", stopSearch)
+	http.HandleFunc("/stop", stopSearch)
+	http.HandleFunc("/info", info)
 	http.ListenAndServe(":8080", nil)
 }
