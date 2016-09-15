@@ -98,7 +98,7 @@ func stopSearch(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/stop", stopSearch)
+	http.HandleFunc("/arrivals", stopSearch)
 	http.HandleFunc("/info", info)
 	http.ListenAndServe(":8080", nil)
 }
