@@ -3,57 +3,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/DexterLB/htmlparsing"
 	"github.com/DexterLB/skgt_api/realtime"
 	"github.com/DexterLB/skgt_api/schedules"
 )
 
-func info(w http.ResponseWriter, req *http.Request) {
-	parameters := req.URL.Query()
-
-	key := parameters.Get("key")
-	if key != "42" {
-		http.Error(w, "fuck you", 403)
-		return
-	}
-
-	scheduleInfos, err := schedules.AllSchedules(htmlparsing.SensibleSettings())
-	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to get schedules: %s", err), 500)
-		return
-	}
-
-	stopInfos, err := realtime.GetStopsInfo(
-		htmlparsing.SensibleSettings(),
-		schedules.GetStops(scheduleInfos),
-		8,
-	)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to get stops: %s", err), 500)
-		return
-	}
-
-	object := &struct {
-		Stops     []*realtime.StopInfo
-		Schedules []*schedules.ScheduleInfo
-	}{
-		Stops:     stopInfos,
-		Schedules: scheduleInfos,
-	}
-
-	data, err := json.MarshalIndent(object, "", "    ")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to marshal data: %s", err), 500)
-		return
-	}
-
-	fmt.Fprintf(w, string(data))
-}
-
 func stopSearch(w http.ResponseWriter, req *http.Request) {
+	log.Printf("start stop search")
+	defer log.Printf("end stop search")
+
 	parameters := req.URL.Query()
 
 	key := parameters.Get("key")
@@ -97,8 +60,83 @@ func stopSearch(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, string(data))
 }
 
+type infoCache struct {
+	sync.Mutex
+
+	info *Info
+}
+
+type Info struct {
+	Stops     []*realtime.StopInfo
+	Schedules []*schedules.ScheduleInfo
+}
+
+func (i *infoCache) GetInfo() (*Info, error) {
+	i.Lock()
+	defer i.Unlock()
+
+	log.Printf("start get info")
+	defer log.Printf("end get info")
+
+	if i.info == nil {
+		scheduleInfos, err := schedules.AllSchedules(htmlparsing.SensibleSettings())
+		if err != nil {
+			return nil, fmt.Errorf("unable to get schedules: %s", err)
+		}
+
+		stopInfos, err := realtime.GetStopsInfo(
+			htmlparsing.SensibleSettings(),
+			schedules.GetStops(scheduleInfos),
+			8,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get stops: %s", err)
+		}
+
+		i.info = &Info{
+			Stops:     stopInfos,
+			Schedules: scheduleInfos,
+		}
+	}
+
+	return i.info, nil
+}
+
+func (i *infoCache) InfoRequest(w http.ResponseWriter, req *http.Request) {
+	parameters := req.URL.Query()
+
+	key := parameters.Get("key")
+	if key != "42" {
+		http.Error(w, "fuck you", 403)
+		return
+	}
+
+	info, err := i.GetInfo()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to get info: %s", err), 500)
+		return
+	}
+
+	data, err := json.MarshalIndent(info, "", "    ")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to marshal data: %s", err), 500)
+		return
+	}
+
+	fmt.Fprintf(w, string(data))
+}
+
 func main() {
+	cache := &infoCache{}
+
+	go func() {
+		_, err := cache.GetInfo()
+		if err != nil {
+			log.Printf("initial get info error: %s", err)
+		}
+	}()
+
 	http.HandleFunc("/arrivals", stopSearch)
-	http.HandleFunc("/info", info)
+	http.HandleFunc("/info", cache.InfoRequest)
 	http.ListenAndServe(":8080", nil)
 }
