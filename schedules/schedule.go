@@ -22,8 +22,8 @@ type Course []*Time
 type ScheduleType int
 
 const (
-	None                              = 0
-	Workday              ScheduleType = 1
+	None                 ScheduleType = 0
+	Workday                           = 1
 	Holiday                           = 2
 	PreHoliday                        = 4
 	HolidayAndPreHoliday              = 6
