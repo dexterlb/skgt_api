@@ -3,8 +3,6 @@ package schedules
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,15 +31,25 @@ const (
 )
 
 type Schedule struct {
-	Type      ScheduleType
+	Type    ScheduleType
+	Courses []Course
+}
+
+type Route struct {
 	Direction string
 	Stops     []int
-	Courses   []Course
+	Schedules []*Schedule
 }
 
 type ScheduleInfo struct {
-	Line      *common.Line
-	Schedules []*Schedule
+	Line   *common.Line
+	Routes []*Route
+}
+
+type routeData struct {
+	Direction string
+	Stops     []int
+	Courses   []Course
 }
 
 func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*ScheduleInfo, error) {
@@ -66,12 +74,16 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 		return nil, fmt.Errorf("unable to find schedule type divs: %s", err)
 	}
 
-	var schedules []*Schedule
+	routes := make(map[string]*Route)
 
 	for i := range typeDivs {
-		scheduleType, err := htmlparsing.First(typeDivs[i], `.//h3`)
+		scheduleTypeHeader, err := htmlparsing.First(typeDivs[i], `.//h3`)
 		if err != nil {
 			return nil, fmt.Errorf("unable to find schedule type: %s", err)
+		}
+		scheduleType, err := parseType(scheduleTypeHeader.Content())
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse schedule type: %s", err)
 		}
 
 		directionDivs, err := typeDivs[i].Search(
@@ -82,34 +94,54 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 		}
 
 		for j := range directionDivs {
-			schedule, err := parseSchedule(directionDivs[j])
+			data, err := parseSchedule(directionDivs[j])
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse schedule: %s", err)
 			}
-			schedule.Type, err = parseType(scheduleType.Content())
-			if err != nil {
-				return nil, fmt.Errorf("unable to parse schedule type: %s", err)
+
+			route, ok := routes[data.Direction]
+			if !ok {
+				route = &Route{
+					Direction: data.Direction,
+					Stops:     data.Stops,
+				}
+				routes[data.Direction] = route
 			}
 
-			schedules = append(schedules, schedule)
+			if !sameStops(route.Stops, data.Stops) {
+				return nil, fmt.Errorf("stops for same route are different on different days")
+			}
+
+			route.Schedules = append(route.Schedules, &Schedule{
+				Type:    scheduleType,
+				Courses: data.Courses,
+			})
 		}
 	}
 
-	log.Printf("checking")
-	for i := range schedules {
-		for j := range schedules {
-			if schedules[i].Direction == schedules[j].Direction {
-				if !reflect.DeepEqual(schedules[i].Stops, schedules[j].Stops) {
-					return nil, fmt.Errorf(":(")
-				}
-			}
-		}
+	routeSlice := make([]*Route, len(routes))
+	i := 0
+	for _, route := range routes {
+		routeSlice[i] = route
+		i++
 	}
 
 	return &ScheduleInfo{
-		Schedules: schedules,
-		Line:      line,
+		Line:   line,
+		Routes: routeSlice,
 	}, nil
+}
+
+func sameStops(a []int, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func parseType(typeName string) (ScheduleType, error) {
@@ -129,7 +161,7 @@ func parseType(typeName string) (ScheduleType, error) {
 	}
 }
 
-func parseSchedule(scheduleDiv xml.Node) (*Schedule, error) {
+func parseSchedule(scheduleDiv xml.Node) (*routeData, error) {
 	direction, err := htmlparsing.First(scheduleDiv, `.//h6`)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find direction: %s")
@@ -145,7 +177,7 @@ func parseSchedule(scheduleDiv xml.Node) (*Schedule, error) {
 		return nil, fmt.Errorf("unable to parse courses: %s", err)
 	}
 
-	return &Schedule{
+	return &routeData{
 		Direction: strings.TrimSpace(direction.Content()),
 		Courses:   courses,
 		Stops:     stops,

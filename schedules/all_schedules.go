@@ -59,8 +59,8 @@ func AllLines(settings *htmlparsing.Settings) ([]*common.Line, error) {
 func GetStops(infos []*ScheduleInfo) []int {
 	stopSet := make(map[int]struct{})
 	for _, info := range infos {
-		for _, schedule := range info.Schedules {
-			for _, stop := range schedule.Stops {
+		for _, route := range info.Routes {
+			for _, stop := range route.Stops {
 				stopSet[stop] = struct{}{}
 			}
 		}
