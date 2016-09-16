@@ -30,18 +30,13 @@ const (
 	All                               = 7
 )
 
-type Schedule struct {
-	Type    ScheduleType
-	Courses []Course
-}
-
 type Route struct {
 	Direction string
 	Stops     []int
-	Schedules []*Schedule
+	Schedules map[ScheduleType][]Course
 }
 
-type ScheduleInfo struct {
+type Timetable struct {
 	Line   *common.Line
 	Routes []*Route
 }
@@ -52,7 +47,7 @@ type routeData struct {
 	Courses   []Course
 }
 
-func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*ScheduleInfo, error) {
+func GetTimetable(settings *htmlparsing.Settings, line *common.Line) (*Timetable, error) {
 	page, err := htmlparsing.NewClient(settings).ParsePage(
 		fmt.Sprintf(
 			"https://schedules.sofiatraffic.bg/%s/%s",
@@ -104,6 +99,7 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 				route = &Route{
 					Direction: data.Direction,
 					Stops:     data.Stops,
+					Schedules: make(map[ScheduleType][]Course),
 				}
 				routes[data.Direction] = route
 			}
@@ -112,10 +108,7 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 				return nil, fmt.Errorf("stops for same route are different on different days")
 			}
 
-			route.Schedules = append(route.Schedules, &Schedule{
-				Type:    scheduleType,
-				Courses: data.Courses,
-			})
+			route.Schedules[scheduleType] = data.Courses
 		}
 	}
 
@@ -126,7 +119,7 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 		i++
 	}
 
-	return &ScheduleInfo{
+	return &Timetable{
 		Line:   line,
 		Routes: routeSlice,
 	}, nil

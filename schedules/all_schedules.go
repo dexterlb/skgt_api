@@ -9,15 +9,15 @@ import (
 	"github.com/DexterLB/skgt_api/common"
 )
 
-func AllSchedules(settings *htmlparsing.Settings) ([]*ScheduleInfo, error) {
+func AllTimetables(settings *htmlparsing.Settings) ([]*Timetable, error) {
 	lines, err := AllLines(settings)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get list of lines")
 	}
 
-	infos := make([]*ScheduleInfo, len(lines))
+	infos := make([]*Timetable, len(lines))
 	for i := range lines {
-		infos[i], err = GetScheduleInfo(settings, lines[i])
+		infos[i], err = GetTimetable(settings, lines[i])
 		if err != nil {
 			return nil, fmt.Errorf("unable to get schedule info: %s", err)
 		}
@@ -56,7 +56,7 @@ func AllLines(settings *htmlparsing.Settings) ([]*common.Line, error) {
 	return lines, nil
 }
 
-func GetStops(infos []*ScheduleInfo) []int {
+func GetStops(infos []*Timetable) []int {
 	stopSet := make(map[int]struct{})
 	for _, info := range infos {
 		for _, route := range info.Routes {

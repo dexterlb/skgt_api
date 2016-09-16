@@ -67,8 +67,8 @@ type infoCache struct {
 }
 
 type Info struct {
-	Stops     []*realtime.StopInfo
-	Schedules []*schedules.ScheduleInfo
+	Stops      []*realtime.StopInfo
+	Timetables []*schedules.Timetable
 }
 
 func (i *infoCache) GetInfo() (*Info, error) {
@@ -79,14 +79,14 @@ func (i *infoCache) GetInfo() (*Info, error) {
 	defer log.Printf("end get info")
 
 	if i.info == nil {
-		scheduleInfos, err := schedules.AllSchedules(htmlparsing.SensibleSettings())
+		timetables, err := schedules.AllTimetables(htmlparsing.SensibleSettings())
 		if err != nil {
 			return nil, fmt.Errorf("unable to get schedules: %s", err)
 		}
 
 		stopInfos, err := realtime.GetStopsInfo(
 			htmlparsing.SensibleSettings(),
-			schedules.GetStops(scheduleInfos),
+			schedules.GetStops(timetables),
 			8,
 		)
 		if err != nil {
@@ -94,8 +94,8 @@ func (i *infoCache) GetInfo() (*Info, error) {
 		}
 
 		i.info = &Info{
-			Stops:     stopInfos,
-			Schedules: scheduleInfos,
+			Stops:      stopInfos,
+			Timetables: timetables,
 		}
 	}
 
