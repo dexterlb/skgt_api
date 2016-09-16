@@ -3,6 +3,8 @@ package schedules
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,8 +21,19 @@ type Time struct {
 
 type Course []*Time
 
+type ScheduleType int
+
+const (
+	None                              = 0
+	Workday              ScheduleType = 1
+	Holiday                           = 2
+	PreHoliday                        = 4
+	HolidayAndPreHoliday              = 6
+	All                               = 7
+)
+
 type Schedule struct {
-	Type      string
+	Type      ScheduleType
 	Direction string
 	Stops     []int
 	Courses   []Course
@@ -73,9 +86,23 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse schedule: %s", err)
 			}
-			schedule.Type = strings.TrimSpace(scheduleType.Content())
+			schedule.Type, err = parseType(scheduleType.Content())
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse schedule type: %s", err)
+			}
 
 			schedules = append(schedules, schedule)
+		}
+	}
+
+	log.Printf("checking")
+	for i := range schedules {
+		for j := range schedules {
+			if schedules[i].Direction == schedules[j].Direction {
+				if !reflect.DeepEqual(schedules[i].Stops, schedules[j].Stops) {
+					return nil, fmt.Errorf(":(")
+				}
+			}
 		}
 	}
 
@@ -83,6 +110,23 @@ func GetScheduleInfo(settings *htmlparsing.Settings, line *common.Line) (*Schedu
 		Schedules: schedules,
 		Line:      line,
 	}, nil
+}
+
+func parseType(typeName string) (ScheduleType, error) {
+	switch strings.TrimSpace(strings.Split(typeName, "-")[0]) {
+	case "делник":
+		return Workday, nil
+	case "предпразник, празник":
+		return HolidayAndPreHoliday, nil
+	case "предпразник":
+		return PreHoliday, nil
+	case "празник":
+		return Holiday, nil
+	case "делник, предпразник, празник":
+		return All, nil
+	default:
+		return None, fmt.Errorf("unknown schedule type: %s", typeName)
+	}
 }
 
 func parseSchedule(scheduleDiv xml.Node) (*Schedule, error) {
