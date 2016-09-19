@@ -18,32 +18,18 @@ func NewBackendServer(backend *Backend) *BackendServer {
 func (b *BackendServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/foo", b.foo)
-	mux.HandleFunc("/get_age", b.getAge)
+	mux.HandleFunc("/info", b.info)
 
 	mux.ServeHTTP(w, r)
 }
 
-func (b *BackendServer) foo(w http.ResponseWriter, r *http.Request) {
-	message, err := b.backend.Foo()
+func (b *BackendServer) info(w http.ResponseWriter, r *http.Request) {
+	message, err := b.backend.Info("42")
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Foo failed: %s", err), 500)
+		http.Error(w, fmt.Sprintf("Info failed: %s", err), 500)
 		return
 	}
 
 	fmt.Fprintf(w, "%s", message)
-}
-
-func (b *BackendServer) getAge(w http.ResponseWriter, r *http.Request) {
-	person := r.URL.Query().Get("person")
-
-	age, err := b.backend.GetAge(person)
-
-	if err != nil {
-		http.Error(w, fmt.Sprintf("GetAge failed: %s", err), 500)
-		return
-	}
-
-	fmt.Fprintf(w, "%s's age is %d", person, age)
 }

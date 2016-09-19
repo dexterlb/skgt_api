@@ -1,7 +1,9 @@
 package backend
 
 import (
+	"database/sql"
 	"fmt"
+	"math/rand"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -23,18 +25,42 @@ func NewBackend(dbURN string) (*Backend, error) {
 	}, nil
 }
 
-func (b *Backend) Foo() (string, error) {
+func (b *Backend) Info(apiKey string) (string, error) {
+	err := b.CheckApiKey(apiKey)
+	if err != nil {
+		return "", err
+	}
+
 	return "this is foo.", nil
 }
 
-func (b *Backend) GetAge(name string) (int, error) {
-	var age int
-	err := b.db.Get(&age, "select age from person where name = $1", name)
-	if err != nil {
-		return 0, err
+func (b *Backend) CheckApiKey(apiKey string) error {
+	err := b.db.Get(&apiKey, "select value from api_key where value = $1", apiKey)
+	switch err {
+	case nil:
+		return nil
+	case sql.ErrNoRows:
+		return ErrWrongApiKey
+	default:
+		return fmt.Errorf("database error: %s", err)
+	}
+}
+
+const apiKeySymbols = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+func (b *Backend) NewApiKey() (string, error) {
+	keyBytes := make([]byte, 256)
+	for i := range keyBytes {
+		keyBytes[i] = apiKeySymbols[rand.Intn(len(apiKeySymbols))]
 	}
 
-	return age, nil
+	key := string(keyBytes)
+
+	_, err := b.db.Exec("insert into api_key(value) values($1)", key)
+	if err != nil {
+		return "", fmt.Errorf("unable to create api key: %s", err)
+	}
+	return key, nil
 }
 
 func (b *Backend) InitDB() error {

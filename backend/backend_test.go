@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,24 +26,47 @@ func init() {
 	)
 }
 
-func TestBackend_Foo(t *testing.T) {
-	assert := assert.New(t)
-
+func openBackend(t *testing.T) (*Backend, string) {
 	backend, err := NewBackend(dbURN)
 	if err != nil {
 		t.Fatalf("cannot create backend: %s", err)
 	}
 
-	foo, err := backend.Foo()
+	err = backend.InitDB()
+	if err != nil {
+		t.Errorf("cannot create database: %s", err)
+	}
+
+	apiKey, err := backend.NewApiKey()
+	if err != nil {
+		t.Fatalf("cannot create api key: %s", err)
+	}
+
+	return backend, apiKey
+}
+
+func closeBackend(t *testing.T, backend *Backend) {
+	err := backend.DropDB()
+	if err != nil {
+		t.Errorf("cannot drop database: %s", err)
+	}
+}
+
+func TestBackend_Info(t *testing.T) {
+	assert := assert.New(t)
+	backend, apiKey := openBackend(t)
+	defer closeBackend(t, backend)
+
+	info, err := backend.Info(apiKey)
 	if err != nil {
 		t.Error(err)
 	}
 
-	assert.Equal("this is foo.", foo)
+	assert.Equal("this is foo.", info)
 }
 
 func TestBackend_GetAge(t *testing.T) {
-	assert := assert.New(t)
+	// assert := assert.New(t)
 
 	backend, err := NewBackend(dbURN)
 	if err != nil {
@@ -53,14 +75,4 @@ func TestBackend_GetAge(t *testing.T) {
 
 	backend.InitDB()
 	defer backend.DropDB()
-
-	db := sqlx.MustConnect("postgres", dbURN)
-	db.MustExec(`insert into person(name, age) values('pesho', 42)`)
-
-	age, err := backend.GetAge("pesho")
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.Equal(42, age)
 }
