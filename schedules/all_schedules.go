@@ -87,21 +87,21 @@ func parseLine(link string) (*common.Line, error) {
 		return nil, fmt.Errorf("link has wrong number of items")
 	}
 
-	var transport common.Transport
+	var vehicle common.VehicleType
 
 	switch groups[0] {
 	case "autobus":
-		transport = common.Bus
+		vehicle = common.Bus
 	case "tramway":
-		transport = common.Tram
+		vehicle = common.Tram
 	case "trolleybus":
-		transport = common.Trolley
+		vehicle = common.Trolley
 	default:
-		return nil, fmt.Errorf("unknown transport type: %s", groups[0])
+		return nil, fmt.Errorf("unknown vehicle type: %s", groups[0])
 	}
 
 	return &common.Line{
-		Type:   transport,
-		Number: groups[1],
+		Vehicle: vehicle,
+		Number:  groups[1],
 	}, nil
 }

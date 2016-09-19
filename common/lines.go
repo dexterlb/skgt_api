@@ -5,18 +5,18 @@ import (
 	"regexp"
 )
 
-//go:generate jsonenums -type=Transport
-type Transport int
+//go:generate jsonenums -type=VehicleType
+type VehicleType int
 
 const (
-	Bus Transport = iota
+	Bus VehicleType = iota
 	Tram
 	Trolley
 )
 
 type Line struct {
-	Type   Transport
-	Number string // Why string? For example "4 ТМ"
+	Vehicle VehicleType
+	Number  string // Why string? For example "4 ТМ"
 }
 
 func ParseLine(input string) (*Line, error) {
@@ -31,11 +31,11 @@ func ParseLine(input string) (*Line, error) {
 
 	switch groups[1] {
 	case "трамвай":
-		line.Type = Tram
+		line.Vehicle = Tram
 	case "тролей":
-		line.Type = Trolley
+		line.Vehicle = Trolley
 	case "автобус":
-		line.Type = Bus
+		line.Vehicle = Bus
 	default:
 		return nil, fmt.Errorf("unknown transport type [%s]", groups[0])
 	}

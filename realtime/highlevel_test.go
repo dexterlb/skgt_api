@@ -28,8 +28,8 @@ func TestArrivals(t *testing.T) {
 		htmlparsing.SensibleSettings(),
 		2045,
 		&common.Line{
-			Type:   common.Tram,
-			Number: "10",
+			Vehicle: common.Tram,
+			Number:  "10",
 		},
 	)
 

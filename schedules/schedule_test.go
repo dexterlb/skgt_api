@@ -23,12 +23,12 @@ func prettyPrint(t *testing.T, data interface{}, w io.Writer) {
 	}
 }
 
-func TestGetSchedule(t *testing.T) {
-	schedule, err := GetScheduleInfo(
+func TestGetTimetable(t *testing.T) {
+	schedule, err := GetTimetable(
 		htmlparsing.SensibleSettings(),
 		&common.Line{
-			Type:   common.Tram,
-			Number: "10",
+			Vehicle: common.Tram,
+			Number:  "10",
 		},
 	)
 
@@ -49,8 +49,8 @@ func TestAllLines(t *testing.T) {
 	prettyPrint(t, lines, os.Stdout)
 }
 
-func TestAllSchedules(t *testing.T) {
-	schedules, err := AllSchedules(htmlparsing.SensibleSettings())
+func TestAllTimetables(t *testing.T) {
+	schedules, err := AllTimetables(htmlparsing.SensibleSettings())
 
 	if err != nil {
 		t.Fatal(err)

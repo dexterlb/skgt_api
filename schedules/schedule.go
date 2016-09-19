@@ -51,7 +51,7 @@ func GetTimetable(settings *htmlparsing.Settings, line *common.Line) (*Timetable
 	page, err := htmlparsing.NewClient(settings).ParsePage(
 		fmt.Sprintf(
 			"https://schedules.sofiatraffic.bg/%s/%s",
-			transportType(line.Type),
+			vehicle(line.Vehicle),
 			line.Number,
 		),
 		nil,
@@ -274,7 +274,7 @@ func (t *Time) MarshalJSON() ([]byte, error) {
 	return json.Marshal(fmt.Sprintf("%02d:%02d", t.Hours, t.Minutes))
 }
 
-func transportType(transport common.Transport) string {
+func vehicle(transport common.VehicleType) string {
 	switch transport {
 	case common.Bus:
 		return "autobus"
