@@ -68,6 +68,8 @@ type StopInfo struct {
 	ID          int
 	Name        string
 	Description string
+	Latitude    float32
+	Longtitude  float32
 }
 
 func GetStopInfo(settings *htmlparsing.Settings, stopID int) (*StopInfo, error) {

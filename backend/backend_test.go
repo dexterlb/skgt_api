@@ -3,6 +3,9 @@ package backend
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +29,7 @@ func init() {
 	)
 }
 
-func openBackend(t *testing.T) (*Backend, string) {
+func openBackend(t *testing.T) *Backend {
 	backend, err := NewBackend(dbURN)
 	if err != nil {
 		t.Fatalf("cannot create backend: %s", err)
@@ -37,12 +40,7 @@ func openBackend(t *testing.T) (*Backend, string) {
 		t.Errorf("cannot create database: %s", err)
 	}
 
-	apiKey, err := backend.NewApiKey()
-	if err != nil {
-		t.Fatalf("cannot create api key: %s", err)
-	}
-
-	return backend, apiKey
+	return backend
 }
 
 func closeBackend(t *testing.T, backend *Backend) {
@@ -52,12 +50,39 @@ func closeBackend(t *testing.T, backend *Backend) {
 	}
 }
 
-func TestBackend_Info(t *testing.T) {
-	assert := assert.New(t)
-	backend, apiKey := openBackend(t)
+func pause() {
+	sigs := make(chan os.Signal, 1)
+	fmt.Printf("Press CTRL-C to continue...\n")
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	<-sigs
+}
+
+func TestBackend_CheckApiKey(t *testing.T) {
+	backend := openBackend(t)
 	defer closeBackend(t, backend)
 
-	info, err := backend.Info(apiKey)
+	apiKey, err := backend.NewApiKey()
+	if err != nil {
+		t.Fatalf("cannot create api key: %s", err)
+	}
+
+	err = backend.CheckApiKey(apiKey)
+	if err != nil {
+		t.Fatalf("generated api key is wrong: %s", err)
+	}
+
+	err = backend.CheckApiKey("42")
+	if err != ErrWrongApiKey {
+		t.Fatalf("wrong error for wrong api key: %s", err)
+	}
+}
+
+func TestBackend_Info(t *testing.T) {
+	assert := assert.New(t)
+	backend := openBackend(t)
+	defer closeBackend(t, backend)
+
+	info, err := backend.Info()
 	if err != nil {
 		t.Error(err)
 	}

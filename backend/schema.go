@@ -1,5 +1,7 @@
 package backend
 
+import "github.com/DexterLB/skgt_api/common"
+
 /*
 Stop(_id, name<string>, description<string>, location<gps>)
 
@@ -12,23 +14,15 @@ RouteStop(route_id, number<int>, stop_id)
 Arrival(route_id, stop_id, time<hour, minute>, type<workday, holiday etc>)
 */
 
-type Stop struct {
-	ID          uint64
-	Name        string
-	Description string
-	Latitude    float32
-	Longtitude  float32
-}
-
 type Transport struct {
 	ID      uint64
-	Vehicle common.Vehicle
+	Vehicle common.VehicleType
 	Number  string
 }
 
 const schema = `
 	create table stop(
-		id bigserial primary key,
+		id int primary key,
 		name varchar(1024),
 		description varchar(2048),
 		latitude real,

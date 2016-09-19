@@ -17,6 +17,13 @@ type Time struct {
 	Minutes int
 }
 
+func NewTime(hours int, minutes int) *Time {
+	return &Time{
+		Hours:   hours,
+		Minutes: minutes,
+	}
+}
+
 type Course []*Time
 
 type ScheduleType int

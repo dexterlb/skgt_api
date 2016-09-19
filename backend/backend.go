@@ -25,12 +25,7 @@ func NewBackend(dbURN string) (*Backend, error) {
 	}, nil
 }
 
-func (b *Backend) Info(apiKey string) (string, error) {
-	err := b.CheckApiKey(apiKey)
-	if err != nil {
-		return "", err
-	}
-
+func (b *Backend) Info() (string, error) {
 	return "this is foo.", nil
 }
 

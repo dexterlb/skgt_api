@@ -24,7 +24,7 @@ func (b *BackendServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *BackendServer) info(w http.ResponseWriter, r *http.Request) {
-	message, err := b.backend.Info("42")
+	message, err := b.backend.Info()
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Info failed: %s", err), 500)
