@@ -29,7 +29,7 @@ const schema = `
 		longtitude real
 	);
 
-	create table transport(
+	create table line(
 		id bigserial primary key,
 		vehicle int,
 		number varchar(10)
@@ -37,7 +37,7 @@ const schema = `
 
 	create table route(
 		id bigserial primary key,
-		transport bigint references transport(id),
+		line bigint references line(id),
 		direction varchar(1024)
 	);
 
@@ -69,5 +69,5 @@ const dropSchema = `
 	drop table route_stop;
 	drop table route;
 	drop table stop;
-	drop table transport;
+	drop table line;
 `

@@ -72,7 +72,7 @@ func TestBackend_Fill(t *testing.T) {
 
 	err := backend.Fill(stops, timetables)
 	if err != nil {
-		t.Fatalf("unable to fill database: %s")
+		t.Fatalf("unable to fill database: %s", err)
 	}
 
 	pause()
