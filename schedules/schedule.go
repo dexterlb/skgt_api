@@ -1,6 +1,7 @@
 package schedules
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -15,6 +16,24 @@ import (
 type Time struct {
 	Hours   int
 	Minutes int
+}
+
+func (t *Time) Scan(src interface{}) error {
+	switch minutes := src.(type) {
+	case int64:
+		if minutes > 60*24 {
+			return fmt.Errorf("%d minutes is more than a day", minutes)
+		}
+		t.Hours = int(minutes / 60)
+		t.Minutes = int(minutes % 60)
+		return nil
+	default:
+		return fmt.Errorf("unknown type for 'time': %T", src)
+	}
+}
+
+func (t *Time) Value() (driver.Value, error) {
+	return int64(t.Hours*60 + t.Minutes), nil
 }
 
 func NewTime(hours int, minutes int) *Time {

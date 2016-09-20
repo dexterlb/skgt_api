@@ -52,6 +52,7 @@ const schema = `
 	create table arrival(
 		route bigint not null,
 		stop bigint not null,
+		course int,
 		time int,
 		day_type int,
 

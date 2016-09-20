@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/DexterLB/skgt_api/realtime"
 	"github.com/DexterLB/skgt_api/schedules"
@@ -64,9 +65,58 @@ func insertTimetable(tx *sqlx.Tx, timetable *schedules.Timetable) error {
 		return err
 	}
 
-	for _, route := range timetable.Routes {
-
+	for i := range timetable.Routes {
+		err = insertRoute(tx, timetable.Routes[i], lineID)
+		if err != nil {
+			return fmt.Errorf("unable to insert route: %s", err)
+		}
 	}
 
+	return nil
+}
+
+func insertRoute(tx *sqlx.Tx, route *schedules.Route, lineID uint64) error {
+	var routeID uint64
+	err := tx.Get(
+		&routeID,
+		`insert into route(id, line, direction)
+		 values(default, $1, $2) returning id`,
+		lineID, route.Direction,
+	)
+	if err != nil {
+		return err
+	}
+
+	for i := range route.Stops {
+		_, err := tx.Exec(
+			`insert into route_stop(route, index, stop)
+			 values($1, $2, $3)`,
+			routeID, i+1, route.Stops[i],
+		)
+		if err != nil {
+			return fmt.Errorf("unable to insert route-stop connection: %s", err)
+		}
+	}
+
+	for scheduleType := range route.Schedules {
+		for courseIndex, course := range route.Schedules[scheduleType] {
+			for stopIndex := range course {
+				_, err = tx.Exec(
+					`insert into arrival(route, stop, course, time, day_type)
+				 	 values($1, $2, $3, $4, $5)`,
+					routeID,
+					route.Stops[stopIndex],
+					courseIndex+1,
+					course[stopIndex],
+					scheduleType,
+				)
+			}
+			if err != nil {
+				return fmt.Errorf("unable to insert arrival: %s", err)
+			}
+		}
+	}
+
+	log.Printf("route id: %d", routeID)
 	return nil
 }
