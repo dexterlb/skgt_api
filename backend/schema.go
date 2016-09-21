@@ -59,6 +59,8 @@ const schema = `
 		foreign key(route, stop) references route_stop(route, stop)
 	);
 
+	create index arrival_route_stop on arrival(route, stop);
+
 	create table api_key(
 		value char(256) primary key
 	);
@@ -66,6 +68,7 @@ const schema = `
 
 const dropSchema = `
 	drop table api_key;
+	drop index arrival_route_stop;
 	drop table arrival;
 	drop table route_stop;
 	drop table route;
