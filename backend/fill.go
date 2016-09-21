@@ -16,6 +16,7 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 	}
 
 	defer func() {
+		log.Printf("error!")
 		if tx != nil {
 			tx.Rollback()
 		}
