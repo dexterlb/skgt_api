@@ -20,6 +20,11 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 		}
 	}()
 
+	_, err = tx.Exec(clearTransportSchema)
+	if err != nil {
+		return fmt.Errorf("cannot clear data before inserting new data: %s", err)
+	}
+
 	for i := range stops {
 		err = insertStop(tx, stops[i])
 		if err != nil {

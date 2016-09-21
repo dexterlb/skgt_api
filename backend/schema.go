@@ -11,7 +11,7 @@ Route(_id, transport_id, direction<string>)
 
 RouteStop(route_id, number<int>, stop_id)
 
-Arrival(route_id, stop_id, time<hour, minute>, type<workday, holiday etc>)
+Arrival(route_id, stop_id, course<int>, time<int, hour * 60 + minute>, type<workday, holiday etc>)
 */
 
 type Transport struct {
@@ -71,4 +71,12 @@ const dropSchema = `
 	drop table route;
 	drop table stop;
 	drop table line;
+`
+
+const clearTransportSchema = `
+	delete from arrival;
+	delete from route_stop;
+	delete from route;
+	delete from stop;
+	delete from line;
 `
