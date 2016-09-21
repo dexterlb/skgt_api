@@ -19,6 +19,10 @@ type Time struct {
 }
 
 func (t *Time) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+
 	switch minutes := src.(type) {
 	case int64:
 		if minutes > 60*24 {
@@ -33,6 +37,10 @@ func (t *Time) Scan(src interface{}) error {
 }
 
 func (t *Time) Value() (driver.Value, error) {
+	if t == nil {
+		return nil, nil
+	}
+
 	return int64(t.Hours*60 + t.Minutes), nil
 }
 

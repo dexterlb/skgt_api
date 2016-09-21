@@ -2,7 +2,6 @@ package backend
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/DexterLB/skgt_api/realtime"
 	"github.com/DexterLB/skgt_api/schedules"
@@ -16,7 +15,6 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 	}
 
 	defer func() {
-		log.Printf("error!")
 		if tx != nil {
 			tx.Rollback()
 		}
@@ -118,6 +116,5 @@ func insertRoute(tx *sqlx.Tx, route *schedules.Route, lineID uint64) error {
 		}
 	}
 
-	log.Printf("route id: %d", routeID)
 	return nil
 }
