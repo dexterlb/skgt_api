@@ -46,6 +46,25 @@ func main() {
 			Action: runServer,
 			Flags:  []cli.Flag{},
 		},
+		{
+			Name:   "apikey",
+			Usage:  "operate on API keys stored in the database",
+			Action: runAPIKey,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "check, c",
+					Usage: "check if an API key is valid",
+				},
+				cli.BoolFlag{
+					Name:  "new, n",
+					Usage: "create a new API key and print it to stdout",
+				},
+				cli.StringFlag{
+					Name:  "delete, d",
+					Usage: "delete an API key",
+				},
+			},
+		},
 	}
 
 	defaultConfigFile, _ := xdgbasedir.GetConfigFileLocation("skgt.toml")

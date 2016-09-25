@@ -54,7 +54,7 @@ const schema = `
 	create index arrival_route_stop on arrival(route, stop);
 
 	create table api_key(
-		value char(256) primary key
+		value char(64) primary key
 	);
 `
 
