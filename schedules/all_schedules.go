@@ -9,6 +9,7 @@ import (
 	"github.com/DexterLB/skgt_api/common"
 )
 
+// AllTimetables returns the timetables for all lines
 func AllTimetables(settings *htmlparsing.Settings) ([]*Timetable, error) {
 	lines, err := AllLines(settings)
 	if err != nil {
@@ -26,6 +27,7 @@ func AllTimetables(settings *htmlparsing.Settings) ([]*Timetable, error) {
 	return infos, nil
 }
 
+// AllLines returns all lines
 func AllLines(settings *htmlparsing.Settings) ([]*common.Line, error) {
 	page, err := htmlparsing.NewClient(settings).ParsePage(
 		`https://schedules.sofiatraffic.bg/`, nil,
@@ -56,10 +58,11 @@ func AllLines(settings *htmlparsing.Settings) ([]*common.Line, error) {
 	return lines, nil
 }
 
-func GetStops(infos []*Timetable) []int {
+// GetStops returns the IDs of all stops mentioned in a list of timetables
+func GetStops(timetables []*Timetable) []int {
 	stopSet := make(map[int]struct{})
-	for _, info := range infos {
-		for _, route := range info.Routes {
+	for _, timetable := range timetables {
+		for _, route := range timetable.Routes {
 			for _, stop := range route.Stops {
 				stopSet[stop] = struct{}{}
 			}
@@ -76,6 +79,8 @@ func GetStops(infos []*Timetable) []int {
 	return stops
 }
 
+// parseLine parses a line from a link such as
+// "https://schedules.sofiatraffic.bg/autobus/18"
 func parseLine(link string) (*common.Line, error) {
 	originalLink, err := url.QueryUnescape(link)
 	if err != nil {

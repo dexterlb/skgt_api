@@ -1,7 +1,5 @@
 package backend
 
-import "github.com/DexterLB/skgt_api/common"
-
 /*
 Stop(_id, name<string>, description<string>, location<gps>)
 
@@ -13,12 +11,6 @@ RouteStop(route_id, number<int>, stop_id)
 
 Arrival(route_id, stop_id, course<int>, time<int, hour * 60 + minute>, type<workday, holiday etc>)
 */
-
-type Transport struct {
-	ID      uint64
-	Vehicle common.VehicleType
-	Number  string
-}
 
 const schema = `
 	create table stop(

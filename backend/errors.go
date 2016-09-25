@@ -2,4 +2,5 @@ package backend
 
 import "errors"
 
-var ErrWrongApiKey = errors.New("wrong API key.")
+// ErrWrongAPIKey is returned upon a wrong API key
+var ErrWrongAPIKey = errors.New("wrong API key")

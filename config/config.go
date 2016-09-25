@@ -9,12 +9,14 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// Config contains all configuration
 type Config struct {
 	Database Database `toml:"database"`
 	Server   Server   `toml:"server"`
 	Parser   Parser   `toml:"parser"`
 }
 
+// Database contains database-related configuration
 type Database struct {
 	Host     string `toml:"host"`
 	Port     int    `toml:"port"`
@@ -24,14 +26,17 @@ type Database struct {
 	SSLMode  string `toml:"ssl_mode"`
 }
 
+// Server contains server-related configuration
 type Server struct {
 	ListenAddress string `toml:"listen_address"`
 }
 
+// Parser contains parser-related configuration
 type Parser struct {
 	ParallelRequests int `toml:"parallel_requests"`
 }
 
+// URN returns a database URN based on the database configuration
 func (db *Database) URN() string {
 	var parameters []string
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -9,12 +8,6 @@ import (
 	"github.com/cep21/xdgbasedir"
 	"github.com/codegangsta/cli"
 )
-
-func showError(c *cli.Context, message string) {
-	fmt.Fprintf(os.Stderr, ">>> error: %s\n\n", message)
-	_ = cli.ShowSubcommandHelp(c)
-	os.Exit(1)
-}
 
 func parseConfig(c *cli.Context) *config.Config {
 	var err error

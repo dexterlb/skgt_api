@@ -8,6 +8,8 @@ import (
 	"github.com/DexterLB/skgt_api/common"
 )
 
+// Arrivals returns all arrivals on the given line, at the given stop in the next
+// hour or so
 func Arrivals(settings *htmlparsing.Settings, stopID int, line *common.Line) ([]*Arrival, error) {
 	data, err := LookupStop(settings, stopID)
 	if err != nil {
@@ -27,11 +29,13 @@ func Arrivals(settings *htmlparsing.Settings, stopID int, line *common.Line) ([]
 	return data.Arrivals(lineID)
 }
 
+// LineArrivals pairs a line with a list of arrivals
 type LineArrivals struct {
 	Line     *common.Line
 	Arrivals []*Arrival
 }
 
+// AllArrivals returns all arrivals at a given stop in the next hour or so
 func AllArrivals(settings *htmlparsing.Settings, stopID int) ([]*LineArrivals, error) {
 	data, err := LookupStop(settings, stopID)
 	if err != nil {
@@ -64,6 +68,7 @@ func AllArrivals(settings *htmlparsing.Settings, stopID int) ([]*LineArrivals, e
 	return lineArrivals, nil
 }
 
+// StopInfo contains information about a single stop
 type StopInfo struct {
 	ID          int
 	Name        string
@@ -72,6 +77,7 @@ type StopInfo struct {
 	Longtitude  float32
 }
 
+// GetStopInfo gets information for the given stop ID
 func GetStopInfo(settings *htmlparsing.Settings, stopID int) (*StopInfo, error) {
 	data, err := LookupStop(settings, stopID)
 	if err != nil {
@@ -85,6 +91,8 @@ func GetStopInfo(settings *htmlparsing.Settings, stopID int) (*StopInfo, error) 
 	}, nil
 }
 
+// GetStopsInfo gets information for multiple stops, making at most
+// parallelRequests requests in a single moment
 func GetStopsInfo(settings *htmlparsing.Settings, stops []int, parallelRequests int) ([]*StopInfo, error) {
 	in := make(chan int)
 	out := make(chan *StopInfo)

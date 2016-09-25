@@ -20,6 +20,7 @@ const captchaURL = "https://skgt-bg.com/VirtualBoard/Services/Captcha.ashx"
 
 var location, _ = time.LoadLocation("Europe/Sofia")
 
+// StopData contains intermediate data
 type StopData struct {
 	Parameters    map[string]string
 	Lines         map[common.Line]int
@@ -30,13 +31,15 @@ type StopData struct {
 	Description   string
 }
 
+// Arrival represents a single arrival at a stop
 type Arrival struct {
-	Time            time.Time
-	Calculated      time.Time
+	Time            time.Time // when the transport will arrive
+	Calculated      time.Time // when Time was estimated
 	AirConditioning bool
 	Accessibility   bool
 }
 
+// Arrivals gets all arrivals for a given line at the stop
 func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	s.Parameters["ctl00$ContentPlaceHolder1$ddlLine"] = fmt.Sprintf("%d", lineID)
 	s.Parameters["ctl00$ContentPlaceHolder1$CaptchaInput"] = s.CaptchaResult
@@ -70,12 +73,15 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	return arrivals, nil
 }
 
+// LoadCaptcha populates the Captcha field with a captcha based on cookies
 func (s *StopData) LoadCaptcha() error {
 	var err error
 	s.Captcha, err = getCaptcha(s.client)
 	return err
 }
 
+// BreakCaptcha populates the CaptchaResult field with a captcha obtained
+// by analysis of the Captcha field
 func (s *StopData) BreakCaptcha() error {
 	err := s.LoadCaptcha()
 	if err != nil {
@@ -92,6 +98,8 @@ func (s *StopData) BreakCaptcha() error {
 	return nil
 }
 
+// LookupStop searches for a stop with the given ID, and constructs StopData
+// by parsing the search result
 func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	client, err := htmlparsing.NewCookiedClient(settings)
 	if err != nil {
@@ -104,12 +112,17 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	}
 	defer page.Free()
 
+	// parse hidden input fields on the page - they contain values that must
+	// be sent back to the server on the next request
 	parameters, err := getFormValues(page)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get hidden values: %s", err)
 	}
 
+	// add our search query
 	parameters["ctl00$ContentPlaceHolder1$tbStopCode"] = fmt.Sprintf("%04d", id)
+
+	// generate random "mouse coordinates" to make the server think we're not a robot
 	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.x"] = fmt.Sprintf("%d", rand.Intn(53))
 	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.y"] = fmt.Sprintf("%d", rand.Intn(16))
 
@@ -135,6 +148,7 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 		return nil, fmt.Errorf("unable to get stop description: %s", err)
 	}
 
+	// get even more hidden values
 	parameters, err = getFormValues(page)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get hidden values: %s", err)
@@ -221,7 +235,7 @@ func parseArrivalTime(input string) (time.Time, time.Time, error) {
 
 	arrival := time.Date(year, month, day, hour, minute, 0, 0, location)
 	if arrival.Before(calculated) {
-		day += 1
+		day++
 		arrival = time.Date(year, month, day, hour, minute, 0, 0, location)
 	}
 

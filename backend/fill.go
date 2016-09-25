@@ -8,6 +8,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Fill populstes the database with the given stops and timetables
+// (replacing all previous content)
 func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timetable) (err error) {
 	tx, err := b.db.Beginx()
 	if err != nil {
@@ -15,16 +17,22 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 	}
 
 	defer func() {
+		// if something has failed, and tx hasn't been commited, roll it back
 		if tx != nil {
-			tx.Rollback()
+			txErr := tx.Rollback()
+			if txErr != nil {
+				err = fmt.Errorf("trying to rollback transaction because of error [%s] failed: %s", err, txErr)
+			}
 		}
 	}()
 
+	// first clear all of the old data
 	_, err = tx.Exec(clearTransportSchema)
 	if err != nil {
 		return fmt.Errorf("cannot clear data before inserting new data: %s", err)
 	}
 
+	// insert stops
 	for i := range stops {
 		err = insertStop(tx, stops[i])
 		if err != nil {
@@ -32,6 +40,7 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 		}
 	}
 
+	// insert timetables
 	for i := range timetables {
 		err = insertTimetable(tx, timetables[i])
 		if err != nil {
@@ -39,10 +48,13 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 		}
 	}
 
+	// commit transaction
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("cannot commit transaction: %s", err)
 	}
+
+	// set tx to nil so that the deferred error check knows not to rollback
 	tx = nil
 
 	return nil
@@ -92,7 +104,7 @@ func insertRoute(tx *sqlx.Tx, route *schedules.Route, lineID uint64) error {
 	}
 
 	for i := range route.Stops {
-		_, err := tx.Exec(
+		_, err = tx.Exec(
 			`insert into route_stop(route, index, stop)
 			 values($1, $2, $3)`,
 			routeID, i+1, route.Stops[i],

@@ -13,11 +13,13 @@ import (
 	"github.com/jbowtie/gokogiri/xml"
 )
 
+// Time represents a schedule time (in the form of hours and minutes)
 type Time struct {
 	Hours   int
 	Minutes int
 }
 
+// Scan parses Time from a database value (number of minutes since midnight)
 func (t *Time) Scan(src interface{}) error {
 	if src == nil {
 		return nil
@@ -36,6 +38,7 @@ func (t *Time) Scan(src interface{}) error {
 	}
 }
 
+// Value stores the Time in a database as number of minutes since midnight
 func (t *Time) Value() (driver.Value, error) {
 	if t == nil {
 		return nil, nil
@@ -44,6 +47,7 @@ func (t *Time) Value() (driver.Value, error) {
 	return int64(t.Hours*60 + t.Minutes), nil
 }
 
+// NewTime initialises Time from hours and minutes
 func NewTime(hours int, minutes int) *Time {
 	return &Time{
 		Hours:   hours,
@@ -51,36 +55,54 @@ func NewTime(hours int, minutes int) *Time {
 	}
 }
 
+// Course is a path a single vehicle takes. It contains the times at which
+// the vehicle stops at each of the stops in the route.
 type Course []*Time
 
+// ScheduleType represents the day type
 type ScheduleType int
 
 const (
-	None                 ScheduleType = 0
-	Workday                           = 1
-	Holiday                           = 2
-	PreHoliday                        = 4
-	HolidayAndPreHoliday              = 6
-	All                               = 7
+	// None is an unknown day type
+	None ScheduleType = 0
+	// Workday is usualy monday-friday
+	Workday = 1
+	// Holiday is any national holiday + all sundays
+	Holiday = 2
+	// PreHoliday are all days scheduled as free around national holidays + all saturdays
+	PreHoliday = 4
+	// HolidayAndPreHoliday is a combination of Holiday and Preholiday
+	HolidayAndPreHoliday = 6
+	// All is a combination of all day types
+	All = 7
 )
 
+// Route is a route which can be performed by a vehicle. Most vehicles have
+// two routes - forward and backward
 type Route struct {
+	// Direction is a human-readable string which describes the route
+	// (usually the endpoints)
 	Direction string
-	Stops     []int
+	// Stops are the stops the vehicle stops at while following this route
+	Stops []int
+	// Schedules contains lists of all courses for each day
 	Schedules map[ScheduleType][]Course
 }
 
+// Timetable pairs a Line with all of its routes
 type Timetable struct {
 	Line   *common.Line
 	Routes []*Route
 }
 
+// routeData is the data for a route we get by parsing a route page
 type routeData struct {
 	Direction string
 	Stops     []int
 	Courses   []Course
 }
 
+// GetTimetable gets the timetable for a given line
 func GetTimetable(settings *htmlparsing.Settings, line *common.Line) (*Timetable, error) {
 	page, err := htmlparsing.NewClient(settings).ParsePage(
 		fmt.Sprintf(
@@ -159,6 +181,7 @@ func GetTimetable(settings *htmlparsing.Settings, line *common.Line) (*Timetable
 	}, nil
 }
 
+// sameStops checks if two slices of stop IDs are the same
 func sameStops(a []int, b []int) bool {
 	if len(a) != len(b) {
 		return false
@@ -171,6 +194,7 @@ func sameStops(a []int, b []int) bool {
 	return true
 }
 
+// parseType parses a schedule type from a human-readable string
 func parseType(typeName string) (ScheduleType, error) {
 	switch strings.TrimSpace(strings.Split(typeName, "-")[0]) {
 	case "делник":
@@ -191,7 +215,7 @@ func parseType(typeName string) (ScheduleType, error) {
 func parseSchedule(scheduleDiv xml.Node) (*routeData, error) {
 	direction, err := htmlparsing.First(scheduleDiv, `.//h6`)
 	if err != nil {
-		return nil, fmt.Errorf("unable to find direction: %s")
+		return nil, fmt.Errorf("unable to find direction: %s", err)
 	}
 
 	stops, err := parseStops(scheduleDiv)
@@ -235,7 +259,7 @@ func parseCourses(scheduleDiv xml.Node) ([]Course, error) {
 		`.//div[contains(@class, 'hours_cell')]/a`,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to find timetable cells", err)
+		return nil, fmt.Errorf("unable to find timetable cells: %s", err)
 	}
 
 	courses := make([]Course, len(timeCells))
@@ -300,6 +324,7 @@ func parseTime(skgtTime string) (*Time, error) {
 	}, nil
 }
 
+// MarshalJSON implements the json.Marshaler interface
 func (t *Time) MarshalJSON() ([]byte, error) {
 	if t == nil {
 		return json.Marshal(nil)

@@ -5,17 +5,20 @@ import (
 	"net/http"
 )
 
-type BackendServer struct {
+// Server is an HTTP server which serves the API
+type Server struct {
 	backend *Backend
 }
 
-func NewBackendServer(backend *Backend) *BackendServer {
-	return &BackendServer{
+// NewServer returns a new server using the specified backend instance
+func NewServer(backend *Backend) *Server {
+	return &Server{
 		backend: backend,
 	}
 }
 
-func (b *BackendServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP implements the HTTP handler interface
+func (b *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/info", b.info)
@@ -23,7 +26,7 @@ func (b *BackendServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux.ServeHTTP(w, r)
 }
 
-func (b *BackendServer) info(w http.ResponseWriter, r *http.Request) {
+func (b *Server) info(w http.ResponseWriter, r *http.Request) {
 	message, err := b.backend.Info()
 
 	if err != nil {
