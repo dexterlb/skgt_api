@@ -10,26 +10,36 @@ import (
 // Server is an HTTP server which serves the API
 type Server struct {
 	backend *backend.Backend
+
+	mux http.Handler
 }
 
-// NewServer returns a new server using the specified backend instance
-func NewServer(backend *backend.Backend) *Server {
-	return &Server{
+// New returns a new server using the specified backend instance
+func New(backend *backend.Backend) *Server {
+	mux := http.NewServeMux()
+	s := &Server{
 		backend: backend,
+		mux:     mux,
 	}
+
+	mux.HandleFunc("/info", s.info)
+
+	return s
 }
 
 // ServeHTTP implements the HTTP handler interface
-func (b *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mux := http.NewServeMux()
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	err := s.checkAPIKey(r)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("unable to verify api key: %s", err), 500)
+		return
+	}
 
-	mux.HandleFunc("/info", b.info)
-
-	mux.ServeHTTP(w, r)
+	s.mux.ServeHTTP(w, r)
 }
 
-func (b *Server) info(w http.ResponseWriter, r *http.Request) {
-	message, err := b.backend.Info()
+func (s *Server) info(w http.ResponseWriter, r *http.Request) {
+	message, err := s.backend.Info()
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Info failed: %s", err), 500)
@@ -37,4 +47,13 @@ func (b *Server) info(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "%s", message)
+}
+
+func (s *Server) checkAPIKey(r *http.Request) error {
+	apiKey := r.URL.Query().Get("api_key")
+	if apiKey == "" {
+		return fmt.Errorf("API Key is empty")
+	}
+
+	return s.backend.CheckAPIKey(apiKey)
 }
