@@ -191,7 +191,7 @@ func parseType(typeName string) (ScheduleType, error) {
 func parseSchedule(scheduleDiv xml.Node) (*routeData, error) {
 	direction, err := htmlparsing.First(scheduleDiv, `.//h6`)
 	if err != nil {
-		return nil, fmt.Errorf("unable to find direction: %s")
+		return nil, fmt.Errorf("unable to find direction: %s", err)
 	}
 
 	stops, err := parseStops(scheduleDiv)
@@ -235,7 +235,7 @@ func parseCourses(scheduleDiv xml.Node) ([]Course, error) {
 		`.//div[contains(@class, 'hours_cell')]/a`,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("unable to find timetable cells", err)
+		return nil, fmt.Errorf("unable to find timetable cells: %s", err)
 	}
 
 	courses := make([]Course, len(timeCells))

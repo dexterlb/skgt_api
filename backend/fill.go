@@ -16,7 +16,10 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 
 	defer func() {
 		if tx != nil {
-			tx.Rollback()
+			txErr := tx.Rollback()
+			if txErr != nil {
+				err = fmt.Errorf("trying to rollback transaction because of error [%s] failed: %s", err, txErr)
+			}
 		}
 	}()
 

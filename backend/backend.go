@@ -6,6 +6,8 @@ import (
 	"math/rand"
 
 	"github.com/jmoiron/sqlx"
+
+	// postgresql driver
 	_ "github.com/lib/pq"
 )
 
