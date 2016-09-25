@@ -8,7 +8,7 @@ import (
 	"github.com/DexterLB/skgt_api/backend"
 	"github.com/DexterLB/skgt_api/realtime"
 	"github.com/DexterLB/skgt_api/schedules"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 func runUpdate(c *cli.Context) error {

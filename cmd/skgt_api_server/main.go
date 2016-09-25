@@ -6,7 +6,7 @@ import (
 
 	"github.com/DexterLB/skgt_api/config"
 	"github.com/cep21/xdgbasedir"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 func parseConfig(c *cli.Context) *config.Config {

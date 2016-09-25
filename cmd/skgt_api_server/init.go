@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/DexterLB/skgt_api/backend"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 func runInit(c *cli.Context) error {

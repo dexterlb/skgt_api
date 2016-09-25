@@ -7,7 +7,7 @@ import (
 
 	"github.com/DexterLB/skgt_api/backend"
 	"github.com/DexterLB/skgt_api/server"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 func runServer(c *cli.Context) error {
