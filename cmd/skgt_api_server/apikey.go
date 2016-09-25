@@ -2,21 +2,18 @@ package main
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/DexterLB/skgt_api/backend"
 	"github.com/urfave/cli"
 )
 
 func runAPIKey(c *cli.Context) error {
-	config := parseConfig(c)
-
-	log.Printf("initialising backend and connecting to database")
-	backend, err := backend.New(config.Database.URN())
-	log.Printf("finished backend initialisation")
-
+	config, err := parseConfig(c)
 	if err != nil {
-		return fmt.Errorf("unable to initialise backend: %s", err)
+		return err
+	}
+	backend, err := initBackend(config)
+	if err != nil {
+		return err
 	}
 
 	apiKey := c.String("check")

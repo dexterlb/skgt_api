@@ -1,26 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/DexterLB/skgt_api/backend"
 	"github.com/DexterLB/skgt_api/config"
 	"github.com/cep21/xdgbasedir"
 	"github.com/urfave/cli"
 )
-
-func parseConfig(c *cli.Context) *config.Config {
-	var err error
-
-	filename := c.GlobalString("config-file")
-
-	config, err := config.Load(filename)
-	if err != nil {
-		log.Fatalf("can't load config file: %s", err)
-	}
-
-	return config
-}
 
 func main() {
 	app := cli.NewApp()
@@ -81,4 +70,29 @@ func main() {
 	if err != nil {
 		log.Printf("error: %s", err)
 	}
+}
+
+func initBackend(config *config.Config) (*backend.Backend, error) {
+	log.Printf("initialising backend and connecting to database")
+	backend, err := backend.New(config.Database.URN())
+	log.Printf("finished backend initialisation")
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialise backend: %s", err)
+	}
+
+	return backend, nil
+}
+
+func parseConfig(c *cli.Context) (*config.Config, error) {
+	var err error
+
+	filename := c.GlobalString("config-file")
+
+	config, err := config.Load(filename)
+	if err != nil {
+		return nil, fmt.Errorf("can't load config file: %s", err)
+	}
+
+	return config, nil
 }
