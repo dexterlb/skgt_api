@@ -16,9 +16,9 @@ type Backend struct {
 	db *sqlx.DB
 }
 
-// NewBackend returns a Backend instance, initialising a connection to the
+// New returns a Backend instance, initialising a connection to the
 // specified postgresql database.
-func NewBackend(dbURN string) (*Backend, error) {
+func New(dbURN string) (*Backend, error) {
 	var db *sqlx.DB
 	db, err := sqlx.Connect("postgres", dbURN)
 	if err != nil {

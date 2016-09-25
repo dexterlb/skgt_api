@@ -15,7 +15,7 @@ func runUpdate(c *cli.Context) error {
 	config := parseConfig(c)
 
 	log.Printf("initialising backend and connecting to database")
-	backend, err := backend.NewBackend(config.Database.URN())
+	backend, err := backend.New(config.Database.URN())
 	log.Printf("finished backend initialisation")
 
 	if err != nil {

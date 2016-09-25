@@ -30,7 +30,7 @@ func init() {
 }
 
 func openBackend(t *testing.T) *Backend {
-	backend, err := NewBackend(dbURN)
+	backend, err := New(dbURN)
 	if err != nil {
 		t.Fatalf("cannot create backend: %s", err)
 	}
@@ -57,22 +57,22 @@ func pause() {
 	<-sigs
 }
 
-func TestBackend_CheckApiKey(t *testing.T) {
+func TestBackend_CheckAPIKey(t *testing.T) {
 	backend := openBackend(t)
 	defer closeBackend(t, backend)
 
-	apiKey, err := backend.NewApiKey()
+	apiKey, err := backend.NewAPIKey()
 	if err != nil {
 		t.Fatalf("cannot create api key: %s", err)
 	}
 
-	err = backend.CheckApiKey(apiKey)
+	err = backend.CheckAPIKey(apiKey)
 	if err != nil {
 		t.Fatalf("generated api key is wrong: %s", err)
 	}
 
-	err = backend.CheckApiKey("42")
-	if err != ErrWrongApiKey {
+	err = backend.CheckAPIKey("42")
+	if err != ErrWrongAPIKey {
 		t.Fatalf("wrong error for wrong api key: %s", err)
 	}
 }
@@ -93,7 +93,7 @@ func TestBackend_Info(t *testing.T) {
 func TestBackend_GetAge(t *testing.T) {
 	// assert := assert.New(t)
 
-	backend, err := NewBackend(dbURN)
+	backend, err := New(dbURN)
 	if err != nil {
 		t.Fatalf("cannot create backend: %s", err)
 	}

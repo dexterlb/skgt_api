@@ -1,17 +1,19 @@
-package backend
+package server
 
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/DexterLB/skgt_api/backend"
 )
 
 // Server is an HTTP server which serves the API
 type Server struct {
-	backend *Backend
+	backend *backend.Backend
 }
 
 // NewServer returns a new server using the specified backend instance
-func NewServer(backend *Backend) *Server {
+func NewServer(backend *backend.Backend) *Server {
 	return &Server{
 		backend: backend,
 	}
