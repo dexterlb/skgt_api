@@ -39,6 +39,22 @@ func TestGetTimetable(t *testing.T) {
 	prettyPrint(t, schedule, os.Stdout)
 }
 
+func TestGetTimetable_Subway(t *testing.T) {
+	schedule, err := GetTimetable(
+		htmlparsing.SensibleSettings(),
+		&common.Line{
+			Vehicle: common.Subway,
+			Number:  "1",
+		},
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prettyPrint(t, schedule, os.Stdout)
+}
+
 func TestAllLines(t *testing.T) {
 	lines, err := AllLines(htmlparsing.SensibleSettings())
 

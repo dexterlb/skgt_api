@@ -17,6 +17,8 @@ const (
 	Tram
 	// Trolley is an electric road vehicle
 	Trolley
+	// Subway is an underground electric rail vehicle
+	Subway
 )
 
 // Line is a transport line (e.g. "Tram 10", "Bus 94" etc)

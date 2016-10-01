@@ -37,7 +37,7 @@ func AllLines(settings *htmlparsing.Settings) ([]*common.Line, error) {
 	}
 
 	links, err := page.Search(
-		`//div[contains(@class, 'lines_section')]/ul/li/a`,
+		`//div[contains(@class, 'lines_section')]/ul/li/a | //a[contains(@class, 'quicksearch') and not(contains(@href, './'))]`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get line links: %s", err)
@@ -101,6 +101,8 @@ func parseLine(link string) (*common.Line, error) {
 		vehicle = common.Tram
 	case "trolleybus":
 		vehicle = common.Trolley
+	case "metro":
+		vehicle = common.Subway
 	default:
 		return nil, fmt.Errorf("unknown vehicle type: %s", groups[0])
 	}

@@ -341,6 +341,8 @@ func vehicle(transport common.VehicleType) string {
 		return "tramway"
 	case common.Trolley:
 		return "trolleybus"
+	case common.Subway:
+		return "metro"
 	default:
 		return ""
 	}

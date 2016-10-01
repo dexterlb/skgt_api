@@ -12,12 +12,14 @@ var (
 		"Bus":     Bus,
 		"Tram":    Tram,
 		"Trolley": Trolley,
+		"Subway":  Subway,
 	}
 
 	_VehicleTypeValueToName = map[VehicleType]string{
 		Bus:     "Bus",
 		Tram:    "Tram",
 		Trolley: "Trolley",
+		Subway:  "Subway",
 	}
 )
 
@@ -28,6 +30,7 @@ func init() {
 			interface{}(Bus).(fmt.Stringer).String():     Bus,
 			interface{}(Tram).(fmt.Stringer).String():    Tram,
 			interface{}(Trolley).(fmt.Stringer).String(): Trolley,
+			interface{}(Subway).(fmt.Stringer).String():  Subway,
 		}
 	}
 }
