@@ -24,35 +24,85 @@ func prettyPrint(t *testing.T, data interface{}, w io.Writer) {
 }
 
 func TestGetTimetable(t *testing.T) {
-	schedule, err := GetTimetable(
-		htmlparsing.SensibleSettings(),
-		&common.Line{
-			Vehicle: common.Tram,
-			Number:  "10",
-		},
-	)
+	stops := make(map[int]string)
+	stopNames := make(chan *StopName)
 
-	if err != nil {
-		t.Fatal(err)
+	var timetable *Timetable
+	go func(timetable **Timetable) {
+		var err error
+
+		*timetable, err = GetTimetable(
+			htmlparsing.SensibleSettings(),
+			&common.Line{
+				Vehicle: common.Tram,
+				Number:  "10",
+			},
+			stopNames,
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		close(stopNames)
+	}(&timetable)
+
+	for stop := range stopNames {
+		stops[stop.ID] = stop.Name
 	}
 
-	prettyPrint(t, schedule, os.Stdout)
+	prettyPrint(
+		t,
+		struct {
+			Timetable *Timetable
+			Stops     map[int]string
+		}{
+			timetable,
+			stops,
+		},
+		os.Stdout,
+	)
 }
 
 func TestGetTimetable_Subway(t *testing.T) {
-	schedule, err := GetTimetable(
-		htmlparsing.SensibleSettings(),
-		&common.Line{
-			Vehicle: common.Subway,
-			Number:  "1",
-		},
-	)
+	stops := make(map[int]string)
+	stopNames := make(chan *StopName)
 
-	if err != nil {
-		t.Fatal(err)
+	var timetable *Timetable
+	go func(timetable **Timetable) {
+		var err error
+
+		*timetable, err = GetTimetable(
+			htmlparsing.SensibleSettings(),
+			&common.Line{
+				Vehicle: common.Subway,
+				Number:  "1",
+			},
+			stopNames,
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		close(stopNames)
+	}(&timetable)
+
+	for stop := range stopNames {
+		stops[stop.ID] = stop.Name
 	}
 
-	prettyPrint(t, schedule, os.Stdout)
+	prettyPrint(
+		t,
+		struct {
+			Timetable *Timetable
+			Stops     map[int]string
+		}{
+			timetable,
+			stops,
+		},
+		os.Stdout,
+	)
 }
 
 func TestAllLines(t *testing.T) {
@@ -66,11 +116,21 @@ func TestAllLines(t *testing.T) {
 }
 
 func TestAllTimetables(t *testing.T) {
-	schedules, err := AllTimetables(htmlparsing.SensibleSettings())
+	timetables, stops, err := AllTimetables(htmlparsing.SensibleSettings(), 8)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	prettyPrint(t, schedules, os.Stdout)
+	prettyPrint(
+		t,
+		struct {
+			Timetables []*Timetable
+			Stops      []*common.Stop
+		}{
+			timetables,
+			stops,
+		},
+		os.Stdout,
+	)
 }

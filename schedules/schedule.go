@@ -89,6 +89,12 @@ type Route struct {
 	Schedules map[ScheduleType][]Course
 }
 
+// StopName pairs a stop with its name
+type StopName struct {
+	ID   int
+	Name string
+}
+
 // Timetable pairs a Line with all of its routes
 type Timetable struct {
 	Line   *common.Line
@@ -102,8 +108,14 @@ type routeData struct {
 	Courses   []Course
 }
 
-// GetTimetable gets the timetable for a given line
-func GetTimetable(settings *htmlparsing.Settings, line *common.Line) (*Timetable, error) {
+// GetTimetable gets the timetable for a given line, sending
+// all stop names it discovers down the stopNames channel
+// (there may be duplicate stops)
+func GetTimetable(
+	settings *htmlparsing.Settings,
+	line *common.Line,
+	stopNames chan<- *StopName,
+) (*Timetable, error) {
 	page, err := htmlparsing.NewClient(settings).ParsePage(
 		fmt.Sprintf(
 			"https://schedules.sofiatraffic.bg/%s/%s",
@@ -145,7 +157,7 @@ func GetTimetable(settings *htmlparsing.Settings, line *common.Line) (*Timetable
 		}
 
 		for j := range directionDivs {
-			data, err := parseSchedule(directionDivs[j])
+			data, err := parseSchedule(directionDivs[j], stopNames)
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse schedule: %s", err)
 			}
@@ -212,13 +224,15 @@ func parseType(typeName string) (ScheduleType, error) {
 	}
 }
 
-func parseSchedule(scheduleDiv xml.Node) (*routeData, error) {
+// parseSchedule parses a single schedule, sending all stops it finds
+// down the stopNames channel
+func parseSchedule(scheduleDiv xml.Node, stopNames chan<- *StopName) (*routeData, error) {
 	direction, err := htmlparsing.First(scheduleDiv, `.//h6`)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find direction: %s", err)
 	}
 
-	stops, err := parseStops(scheduleDiv)
+	stops, err := parseStops(scheduleDiv, stopNames)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse stops: %s", err)
 	}
@@ -235,9 +249,11 @@ func parseSchedule(scheduleDiv xml.Node) (*routeData, error) {
 	}, nil
 }
 
-func parseStops(scheduleDiv xml.Node) ([]int, error) {
+// parseStops parses a stop table, returning a slice of stop IDs and sending
+// all stops it sees down the stopNames channel
+func parseStops(scheduleDiv xml.Node, stopNames chan<- *StopName) ([]int, error) {
 	stopItems, err := scheduleDiv.Search(
-		`.//ul[contains(@class, 'schedule_direction_signs')]/li/a[contains(@class, 'stop_link')]`,
+		`.//ul[contains(@class, 'schedule_direction_signs')]/li`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to find stops: %s", err)
@@ -245,13 +261,48 @@ func parseStops(scheduleDiv xml.Node) ([]int, error) {
 
 	stops := make([]int, len(stopItems))
 	for i := range stopItems {
-		stops[i], err = strconv.Atoi(strings.TrimSpace(stopItems[i].Content()))
+		id, name, err := parseStop(stopItems[i])
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse stop id: %s", err)
+			return nil, fmt.Errorf("unable to parse stop list item: %s", err)
+		}
+
+		stops[i] = id
+		if stopNames != nil {
+			stopNames <- &StopName{
+				ID:   id,
+				Name: name,
+			}
 		}
 	}
 
 	return stops, nil
+}
+
+func parseStop(stopItem xml.Node) (int, string, error) {
+	idLink, err := htmlparsing.First(
+		stopItem,
+		`.//a[contains(@class, 'stop_link')]`,
+	)
+	if err != nil {
+		return 0, "", fmt.Errorf("unable to find stop id link: %s", err)
+	}
+
+	id, err := strconv.Atoi(strings.TrimSpace(idLink.Content()))
+	if err != nil {
+		return 0, "", fmt.Errorf("unable to parse stop id: %s", err)
+	}
+
+	nameLink, err := htmlparsing.First(
+		stopItem,
+		`.//a[contains(@class, 'stop_change')]`,
+	)
+	if err != nil {
+		return 0, "", fmt.Errorf("unable to find stop name link: %s", err)
+	}
+
+	name := strings.TrimSpace(nameLink.Content())
+
+	return id, name, nil
 }
 
 func parseCourses(scheduleDiv xml.Node) ([]Course, error) {

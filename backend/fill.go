@@ -3,14 +3,14 @@ package backend
 import (
 	"fmt"
 
-	"github.com/DexterLB/skgt_api/realtime"
+	"github.com/DexterLB/skgt_api/common"
 	"github.com/DexterLB/skgt_api/schedules"
 	"github.com/jmoiron/sqlx"
 )
 
 // Fill populstes the database with the given stops and timetables
 // (replacing all previous content)
-func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timetable) (err error) {
+func (b *Backend) Fill(stops []*common.Stop, timetables []*schedules.Timetable) (err error) {
 	tx, err := b.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("cannot open transaction: %s", err)
@@ -60,7 +60,7 @@ func (b *Backend) Fill(stops []*realtime.StopInfo, timetables []*schedules.Timet
 	return nil
 }
 
-func insertStop(tx *sqlx.Tx, stop *realtime.StopInfo) error {
+func insertStop(tx *sqlx.Tx, stop *common.Stop) error {
 	_, err := tx.NamedExec(
 		`insert into stop(id, name, description, latitude, longtitude)
 	     values (:id, :name, :description, :latitude, :longtitude)`,

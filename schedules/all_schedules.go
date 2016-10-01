@@ -4,27 +4,86 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/DexterLB/htmlparsing"
 	"github.com/DexterLB/skgt_api/common"
 )
 
-// AllTimetables returns the timetables for all lines
-func AllTimetables(settings *htmlparsing.Settings) ([]*Timetable, error) {
+// AllTimetables returns the timetables for all lines and all stops,
+// making at most parrallelRequests http requests at the same time.
+// Stops might not have the full infurmation, and need to be processed
+// further.
+func AllTimetables(
+	settings *htmlparsing.Settings,
+	parallelRequests int,
+) (
+	[]*Timetable,
+	[]*common.Stop,
+	error,
+) {
 	lines, err := AllLines(settings)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get list of lines")
+		return nil, nil, fmt.Errorf("unable to get list of lines")
 	}
 
-	infos := make([]*Timetable, len(lines))
-	for i := range lines {
-		infos[i], err = GetTimetable(settings, lines[i])
-		if err != nil {
-			return nil, fmt.Errorf("unable to get schedule info: %s", err)
+	in := make(chan *common.Line, parallelRequests*2)
+	out := make(chan *Timetable, parallelRequests*2)
+	stops := make(chan *StopName, parallelRequests*2)
+	errors := make(chan error)
+
+	go func() {
+		for i := range lines {
+			in <- lines[i]
 		}
+		close(in)
+	}()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(parallelRequests)
+	for i := 0; i < parallelRequests; i++ {
+		go func() {
+			defer wg.Done()
+
+			for line := range in {
+				info, err := GetTimetable(settings, line, stops)
+				if err != nil {
+					errors <- err
+				} else {
+					out <- info
+				}
+			}
+		}()
 	}
 
-	return infos, nil
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	timetables := make([]*Timetable, len(lines))
+	go func() {
+		i := 0
+		for timetable := range out {
+			timetables[i] = timetable
+			i++
+		}
+		close(stops)
+	}()
+
+	stopNameSet := make(map[int]string)
+	go func() {
+		for stop := range stops {
+			stopNameSet[stop.ID] = stop.Name
+		}
+		close(errors)
+	}()
+
+	for err := range errors {
+		return nil, nil, fmt.Errorf("unable to get stop info: %s", err)
+	}
+
+	return timetables, stopNamesToStops(stopNameSet), nil
 }
 
 // AllLines returns all lines
@@ -111,4 +170,17 @@ func parseLine(link string) (*common.Line, error) {
 		Vehicle: vehicle,
 		Number:  groups[1],
 	}, nil
+}
+
+func stopNamesToStops(stopNames map[int]string) []*common.Stop {
+	stops := make([]*common.Stop, len(stopNames))
+	i := 0
+	for id, name := range stopNames {
+		stops[i] = &common.Stop{
+			ID:   id,
+			Name: name,
+		}
+		i++
+	}
+	return stops
 }

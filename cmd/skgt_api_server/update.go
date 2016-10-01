@@ -21,7 +21,10 @@ func runUpdate(c *cli.Context) error {
 	}
 
 	log.Printf("parsing timetables")
-	timetables, err := schedules.AllTimetables(htmlparsing.SensibleSettings())
+	timetables, stopInfos, err := schedules.AllTimetables(
+		htmlparsing.SensibleSettings(),
+		config.Parser.ParallelRequests,
+	)
 	log.Printf("finished parsing timetables")
 
 	if err != nil {
@@ -29,9 +32,9 @@ func runUpdate(c *cli.Context) error {
 	}
 
 	log.Printf("parsing stop info")
-	stopInfos, err := realtime.GetStopsInfo(
+	err = realtime.UpdateStopsInfo(
 		htmlparsing.SensibleSettings(),
-		schedules.GetStops(timetables),
+		stopInfos,
 		config.Parser.ParallelRequests,
 	)
 	log.Printf("finished parsing stop info")
