@@ -4,27 +4,26 @@ import (
 	"testing"
 
 	"github.com/DexterLB/skgt_api/common"
-	"github.com/DexterLB/skgt_api/realtime"
 	"github.com/DexterLB/skgt_api/schedules"
 )
 
-func TestBackend_Fill(t *testing.T) {
-	stops := []*realtime.StopInfo{
-		&realtime.StopInfo{
+func fillDatabase(t *testing.T) *Backend {
+	stops := []*common.Stop{
+		&common.Stop{
 			ID:          1,
 			Name:        "foo",
 			Description: "FOO",
 			Latitude:    42,
 			Longtitude:  26,
 		},
-		&realtime.StopInfo{
+		&common.Stop{
 			ID:          2,
 			Name:        "bar",
 			Description: "BAR",
 			Latitude:    42,
 			Longtitude:  26,
 		},
-		&realtime.StopInfo{
+		&common.Stop{
 			ID:          3,
 			Name:        "baz",
 			Description: "BAZ",
@@ -68,12 +67,11 @@ func TestBackend_Fill(t *testing.T) {
 	}
 
 	backend := openBackend(t)
-	defer closeBackend(t, backend)
 
 	err := backend.Fill(stops, timetables)
 	if err != nil {
 		t.Fatalf("unable to fill database: %s", err)
 	}
 
-	pause()
+	return backend
 }
