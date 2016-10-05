@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/DexterLB/htmlparsing"
 	"github.com/DexterLB/skgt_api/server"
 	"github.com/urfave/cli"
 )
@@ -18,7 +19,7 @@ func runServer(c *cli.Context) error {
 		return err
 	}
 
-	server := server.New(backend)
+	server := server.New(backend, htmlparsing.SensibleSettings())
 
 	log.Printf("starting HTTP server on address %s", config.Server.ListenAddress)
 	log.Printf("exit: %s", http.ListenAndServe(config.Server.ListenAddress, server))

@@ -1,29 +1,34 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/DexterLB/htmlparsing"
 	"github.com/DexterLB/skgt_api/backend"
 	"github.com/julienschmidt/httprouter"
 )
 
 // Server is an HTTP server which serves the API
 type Server struct {
-	backend *backend.Backend
+	backend        *backend.Backend
+	parserSettings *htmlparsing.Settings
 
 	router *httprouter.Router
 }
 
 // New returns a new server using the specified backend instance
-func New(backend *backend.Backend) *Server {
+func New(backend *backend.Backend, parserSettings *htmlparsing.Settings) *Server {
 	router := httprouter.New()
 	s := &Server{
-		backend: backend,
-		router:  router,
+		backend:        backend,
+		parserSettings: parserSettings,
+		router:         router,
 	}
 
 	router.GET("/info", s.info)
+	router.GET("/stop/:stop_id/arrivals/realtime", jsonHandler(s.realtimeArrivals))
 
 	return s
 }
@@ -61,4 +66,36 @@ func (s *Server) checkAPIKey(r *http.Request) error {
 	}
 
 	return s.backend.CheckAPIKey(apiKey)
+}
+
+// jsonHandler wraps a function which returns JSON-marshable data (or an error)
+// and returns a httrouter Handle which calls the function upon a request
+func jsonHandler(
+	handler func(params httprouter.Params) (interface{}, error),
+) httprouter.Handle {
+	return func(
+		w http.ResponseWriter,
+		r *http.Request,
+		params httprouter.Params,
+	) {
+		object, err := handler(params)
+		if err != nil {
+			http.Error(
+				w,
+				fmt.Sprintf("error handling request: %s", err),
+				http.StatusInternalServerError,
+			)
+		}
+
+		data, err := json.MarshalIndent(object, "", "    ")
+		if err != nil {
+			http.Error(
+				w,
+				fmt.Sprintf("error marshaling data: %s", err),
+				http.StatusInternalServerError,
+			)
+		}
+
+		w.Write(data)
+	}
 }
