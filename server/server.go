@@ -60,7 +60,23 @@ func (s *Server) info(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 }
 
 func (s *Server) checkAPIKey(r *http.Request) error {
-	apiKey := r.URL.Query().Get("api_key")
+	var apiKey string
+
+	user, password, hasAuth := r.BasicAuth()
+	if hasAuth {
+		if user != "" {
+			apiKey = user
+		}
+		if password != "" {
+			apiKey = password
+		}
+	} else {
+		apiKey = r.Header.Get("X-Api-Key")
+		if apiKey == "" {
+			apiKey = r.URL.Query().Get("api_key")
+		}
+	}
+
 	if apiKey == "" {
 		return fmt.Errorf("API Key is empty")
 	}
