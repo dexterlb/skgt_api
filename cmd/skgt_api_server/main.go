@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/DexterLB/skgt_api/backend"
 	"github.com/DexterLB/skgt_api/config"
@@ -12,6 +14,9 @@ import (
 )
 
 func main() {
+	// initialise random generator to be able to correctly handle API keys
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	app := cli.NewApp()
 	app.Name = "skgt api server"
 	app.Usage = "totally legal."
