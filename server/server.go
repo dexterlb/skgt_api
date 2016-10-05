@@ -5,24 +5,25 @@ import (
 	"net/http"
 
 	"github.com/DexterLB/skgt_api/backend"
+	"github.com/julienschmidt/httprouter"
 )
 
 // Server is an HTTP server which serves the API
 type Server struct {
 	backend *backend.Backend
 
-	mux http.Handler
+	router *httprouter.Router
 }
 
 // New returns a new server using the specified backend instance
 func New(backend *backend.Backend) *Server {
-	mux := http.NewServeMux()
+	router := httprouter.New()
 	s := &Server{
 		backend: backend,
-		mux:     mux,
+		router:  router,
 	}
 
-	mux.HandleFunc("/info", s.info)
+	router.GET("/info", s.info)
 
 	return s
 }
@@ -31,14 +32,18 @@ func New(backend *backend.Backend) *Server {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err := s.checkAPIKey(r)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("unable to verify api key: %s", err), 500)
+		http.Error(
+			w,
+			fmt.Sprintf("unable to verify api key: %s", err),
+			http.StatusForbidden,
+		)
 		return
 	}
 
-	s.mux.ServeHTTP(w, r)
+	s.router.ServeHTTP(w, r)
 }
 
-func (s *Server) info(w http.ResponseWriter, r *http.Request) {
+func (s *Server) info(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	message, err := s.backend.Info()
 
 	if err != nil {
