@@ -35,7 +35,7 @@ func TestBackend_Routes(t *testing.T) {
 	backend := fillDatabase(t)
 	defer closeBackend(t, backend)
 
-	routes, err := backend.Routes(94, common.Bus)
+	routes, err := backend.Routes("94", common.Bus)
 	if err != nil {
 		t.Fatal(err)
 	}

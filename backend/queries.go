@@ -15,6 +15,7 @@ const (
 	GET_STOPS_FOR_ROUTE = `
 		select s.* from route_stop r
 		left outer join stop s on r.stop = s.id
-		where r.route = $1;
+		where r.route = $1
+		order by r.index;
 	`
 )

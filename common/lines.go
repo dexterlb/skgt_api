@@ -53,3 +53,18 @@ func ParseLine(input string) (*Line, error) {
 
 	return line, nil
 }
+
+func ParseVehicle(requestType string) (VehicleType, error) {
+	switch requestType {
+	case "tram":
+		return Tram, nil
+	case "trolley":
+		return Trolley, nil
+	case "bus":
+		return Bus, nil
+	case "subway":
+		return Subway, nil
+	default:
+		return -1, fmt.Errorf("unknown transport type [%s]", requestType)
+	}
+}

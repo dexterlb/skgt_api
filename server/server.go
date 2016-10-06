@@ -29,7 +29,8 @@ func New(backend *backend.Backend, parserSettings *htmlparsing.Settings) *Server
 
 	router.GET("/info", s.info)
 	router.GET("/stop/:stop_id/arrivals/realtime", jsonHandler(s.realtimeArrivals))
-	router.GET("/transport/list", jsonHandler(s.transports))
+	router.GET("/transport/line/:vehicle/:number/routes", jsonHandler(s.routes))
+	router.GET("/transport/list/", jsonHandler(s.transports))
 
 	return s
 }
