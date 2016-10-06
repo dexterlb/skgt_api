@@ -3,7 +3,7 @@ package backend
 const (
 	GET_ALL_LINES = `
 		select vehicle, number from line 
-		order by number, vehicle;
+		order by vehicle, number;
 	`
 
 	GET_DIRECTION_AND_ROUTE_FOR_LINE = `
