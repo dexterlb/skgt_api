@@ -30,6 +30,48 @@ func fillDatabase(t *testing.T) *Backend {
 			Latitude:    42,
 			Longtitude:  26,
 		},
+		&common.Stop{
+			ID:          4,
+			Name:        "qux",
+			Description: "Qux",
+			Latitude:    42,
+			Longtitude:  26,
+		},
+		&common.Stop{
+			ID:          5,
+			Name:        "quux",
+			Description: "Quux",
+			Latitude:    42,
+			Longtitude:  26,
+		},
+		&common.Stop{
+			ID:          6,
+			Name:        "corge",
+			Description: "Corge",
+			Latitude:    42,
+			Longtitude:  26,
+		},
+		&common.Stop{
+			ID:          7,
+			Name:        "garply",
+			Description: "Garply",
+			Latitude:    42,
+			Longtitude:  26,
+		},
+		&common.Stop{
+			ID:          8,
+			Name:        "waldo",
+			Description: "Waldo",
+			Latitude:    42,
+			Longtitude:  26,
+		},
+		&common.Stop{
+			ID:          9,
+			Name:        "fred",
+			Description: "Fred",
+			Latitude:    42,
+			Longtitude:  26,
+		},
 	}
 	timetables := []*schedules.Timetable{
 		&schedules.Timetable{
@@ -58,6 +100,63 @@ func fillDatabase(t *testing.T) *Backend {
 							schedules.Course{
 								schedules.NewTime(14, 0),
 								schedules.NewTime(14, 30),
+							},
+						},
+					},
+				},
+			},
+		},
+
+		&schedules.Timetable{
+			Line: &common.Line{
+				Vehicle: common.Bus,
+				Number:  "94",
+			},
+			Routes: []*schedules.Route{
+				&schedules.Route{
+					Direction: "A - B",
+					Stops:     []int{4, 5, 6},
+					Schedules: map[schedules.ScheduleType][]schedules.Course{
+						schedules.Workday: []schedules.Course{
+							schedules.Course{
+								schedules.NewTime(10, 0),
+								schedules.NewTime(10, 30),
+								schedules.NewTime(11, 0),
+							},
+							schedules.Course{
+								schedules.NewTime(2, 0),
+								schedules.NewTime(2, 30),
+								schedules.NewTime(3, 0),
+							},
+						},
+						schedules.HolidayAndPreHoliday: []schedules.Course{
+							schedules.Course{
+								schedules.NewTime(9, 0),
+								schedules.NewTime(10, 30),
+							},
+						},
+					},
+				},
+				&schedules.Route{
+					Direction: "B - A",
+					Stops:     []int{7, 8, 9},
+					Schedules: map[schedules.ScheduleType][]schedules.Course{
+						schedules.Workday: []schedules.Course{
+							schedules.Course{
+								schedules.NewTime(10, 0),
+								schedules.NewTime(10, 30),
+								schedules.NewTime(11, 0),
+							},
+							schedules.Course{
+								schedules.NewTime(2, 0),
+								schedules.NewTime(2, 30),
+								schedules.NewTime(3, 0),
+							},
+						},
+						schedules.HolidayAndPreHoliday: []schedules.Course{
+							schedules.Course{
+								schedules.NewTime(9, 0),
+								schedules.NewTime(10, 30),
 							},
 						},
 					},
