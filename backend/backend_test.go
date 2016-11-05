@@ -87,7 +87,7 @@ func TestBackend_Info(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Equal("this is foo.", info)
+	assert.Equal("skgt-api, pre-release", info)
 }
 
 func TestBackend_GetAge(t *testing.T) {
