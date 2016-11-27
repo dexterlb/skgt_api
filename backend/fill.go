@@ -11,53 +11,31 @@ import (
 // Fill populstes the database with the given stops and timetables
 // (replacing all previous content)
 func (b *Backend) Fill(stops []*common.Stop, timetables []*schedules.Timetable) (err error) {
-	tx, err := b.db.Beginx()
-	if err != nil {
-		return fmt.Errorf("cannot open transaction: %s", err)
-	}
+	_, err = b.Wrap(func(tx *sqlx.Tx) (interface{}, error) {
+		// first clear all of the old data
+		_, err = tx.Exec(clearTransportSchema)
+		if err != nil {
+			return nil, fmt.Errorf("cannot clear data before inserting new data: %s", err)
+		}
 
-	defer func() {
-		// if something has failed, and tx hasn't been commited, roll it back
-		if tx != nil {
-			txErr := tx.Rollback()
-			if txErr != nil {
-				err = fmt.Errorf("trying to rollback transaction because of error [%s] failed: %s", err, txErr)
+		// insert stops
+		for i := range stops {
+			err = insertStop(tx, stops[i])
+			if err != nil {
+				return nil, fmt.Errorf("unable to insert stop: %s", err)
 			}
 		}
-	}()
 
-	// first clear all of the old data
-	_, err = tx.Exec(clearTransportSchema)
-	if err != nil {
-		return fmt.Errorf("cannot clear data before inserting new data: %s", err)
-	}
-
-	// insert stops
-	for i := range stops {
-		err = insertStop(tx, stops[i])
-		if err != nil {
-			return fmt.Errorf("unable to insert stop: %s", err)
+		// insert timetables
+		for i := range timetables {
+			err = insertTimetable(tx, timetables[i])
+			if err != nil {
+				return nil, fmt.Errorf("unable to insert timetable: %s", err)
+			}
 		}
-	}
-
-	// insert timetables
-	for i := range timetables {
-		err = insertTimetable(tx, timetables[i])
-		if err != nil {
-			return fmt.Errorf("unable to insert timetable: %s", err)
-		}
-	}
-
-	// commit transaction
-	err = tx.Commit()
-	if err != nil {
-		return fmt.Errorf("cannot commit transaction: %s", err)
-	}
-
-	// set tx to nil so that the deferred error check knows not to rollback
-	tx = nil
-
-	return nil
+		return nil, nil
+	})
+	return err
 }
 
 func insertStop(tx *sqlx.Tx, stop *common.Stop) error {
@@ -67,6 +45,7 @@ func insertStop(tx *sqlx.Tx, stop *common.Stop) error {
 		stop,
 	)
 	return err
+
 }
 
 func insertTimetable(tx *sqlx.Tx, timetable *schedules.Timetable) error {

@@ -29,6 +29,8 @@ func New(backend *backend.Backend, parserSettings *htmlparsing.Settings) *Server
 
 	router.GET("/info", s.info)
 	router.GET("/stop/:stop_id/arrivals/realtime", jsonHandler(s.realtimeArrivals))
+	router.GET("/transport/line/:vehicle/:number/routes", jsonHandler(s.routes))
+	router.GET("/transport/list/", jsonHandler(s.transports))
 
 	return s
 }
@@ -86,14 +88,8 @@ func (s *Server) checkAPIKey(r *http.Request) error {
 
 // jsonHandler wraps a function which returns JSON-marshable data (or an error)
 // and returns a httrouter Handle which calls the function upon a request
-func jsonHandler(
-	handler func(params httprouter.Params) (interface{}, error),
-) httprouter.Handle {
-	return func(
-		w http.ResponseWriter,
-		r *http.Request,
-		params httprouter.Params,
-	) {
+func jsonHandler(handler func(params httprouter.Params) (interface{}, error)) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		object, err := handler(params)
 		if err != nil {
 			http.Error(
