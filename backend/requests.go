@@ -17,7 +17,9 @@ func (b *Backend) Transports() ([]*common.Line, error) {
 	return transports, nil
 }
 
-func (b *Backend) Routes(lineNumber string, vehicleType common.VehicleType) ([]*common.Route, error) {
+func (b *Backend) Routes(
+	lineNumber string, vehicleType common.VehicleType,
+) ([]*common.Route, error) {
 	data, err := b.Wrap(func(tx *sqlx.Tx) (interface{}, error) {
 		var routes []*common.Route
 		var stops []*common.Stop
@@ -26,10 +28,17 @@ func (b *Backend) Routes(lineNumber string, vehicleType common.VehicleType) ([]*
 			RouteId   int
 		}
 
-		err := tx.Select(&directionRouteConnection, GET_DIRECTION_AND_ROUTE_FOR_LINE, lineNumber, vehicleType)
+		err := tx.Select(
+			&directionRouteConnection,
+			GET_DIRECTION_AND_ROUTE_FOR_LINE,
+			lineNumber, vehicleType,
+		)
 
 		if err != nil {
-			return nil, fmt.Errorf("unable to select directions for line %s of type %s from db: %s", lineNumber, vehicleType, err)
+			return nil, fmt.Errorf(
+				"unable to select directions for line %s of type %s from db: %s",
+				lineNumber, vehicleType, err,
+			)
 		}
 
 		for i := range directionRouteConnection {
@@ -40,7 +49,10 @@ func (b *Backend) Routes(lineNumber string, vehicleType common.VehicleType) ([]*
 
 			err = tx.Select(&stops, GET_STOPS_FOR_ROUTE, routeId)
 			if err != nil {
-				return nil, fmt.Errorf("unable to select routes for line %s of type %s from db: %s", lineNumber, vehicleType, err)
+				return nil, fmt.Errorf(
+					"unable to select routes for line %s of type %s from db: %s",
+					lineNumber, vehicleType, err,
+				)
 			}
 
 			routes = append(routes, &common.Route{direction, stops})

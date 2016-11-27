@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/DexterLB/skgt_api/common"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestBackend_Transports(t *testing.T) {
@@ -18,17 +17,16 @@ func TestBackend_Transports(t *testing.T) {
 
 	expected := []*common.Line{
 		&common.Line{
-			Vehicle: common.Tram,
-			Number:  "10",
-		},
-		&common.Line{
 			Vehicle: common.Bus,
 			Number:  "94",
 		},
+		&common.Line{
+			Vehicle: common.Tram,
+			Number:  "10",
+		},
 	}
 
-	assert := assert.New(t)
-	assert.Equal(expected, transports)
+	assertEqualJSON(expected, transports, t)
 }
 
 func TestBackend_Routes(t *testing.T) {
