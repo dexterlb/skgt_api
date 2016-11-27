@@ -9,6 +9,7 @@ import (
 type VehicleType int
 
 //go:generate jsonenums -type=VehicleType
+//go:generate stringer -type=VehicleType
 
 const (
 	// Bus is a fossil-fuel powered road vehicle

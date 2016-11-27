@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -61,6 +62,9 @@ type Course []*Time
 
 // ScheduleType represents the day type
 type ScheduleType int
+
+//go:generate jsonenums -type=ScheduleType
+//go:generate stringer -type=ScheduleType
 
 const (
 	// None is an unknown day type
@@ -173,15 +177,16 @@ func GetTimetable(
 			}
 
 			if !sameStops(route.Stops, data.Stops) {
-				return nil, fmt.Errorf(
-					"stops for same route are different on different days (%s %s), directions: (%s, %s), stops: %v, %v",
+				log.Printf(
+					"warning: ignoring schedule %s for line [%s %s]: stops for same route are different on different days, directions: (%s, %s), stops: %v, %v",
+					scheduleType,
 					line.Vehicle, line.Number,
 					route.Direction, data.Direction,
 					route.Stops, data.Stops,
 				)
+			} else {
+				route.Schedules[scheduleType] = data.Courses
 			}
-
-			route.Schedules[scheduleType] = data.Courses
 		}
 	}
 
