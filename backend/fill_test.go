@@ -75,3 +75,8 @@ func fillDatabase(t *testing.T) *Backend {
 
 	return backend
 }
+
+func TestBackend_Fill(t *testing.T) {
+	backend := fillDatabase(t)
+	defer closeBackend(t, backend)
+}

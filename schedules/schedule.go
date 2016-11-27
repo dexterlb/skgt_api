@@ -173,7 +173,12 @@ func GetTimetable(
 			}
 
 			if !sameStops(route.Stops, data.Stops) {
-				return nil, fmt.Errorf("stops for same route are different on different days")
+				return nil, fmt.Errorf(
+					"stops for same route are different on different days (%s %s), directions: (%s, %s), stops: %v, %v",
+					line.Vehicle, line.Number,
+					route.Direction, data.Direction,
+					route.Stops, data.Stops,
+				)
 			}
 
 			route.Schedules[scheduleType] = data.Courses
