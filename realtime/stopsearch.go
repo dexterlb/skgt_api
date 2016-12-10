@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -44,7 +43,7 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	s.Parameters["ctl00$ContentPlaceHolder1$ddlLine"] = fmt.Sprintf("%d", lineID)
 	s.Parameters["ctl00$ContentPlaceHolder1$CaptchaInput"] = s.CaptchaResult
 
-	page, err := s.client.ParsePage(pageURL, urlValues(s.Parameters))
+	page, err := s.client.ParsePage(pageURL, htmlparsing.URLValues(s.Parameters))
 	if err != nil {
 		return nil, fmt.Errorf("cannot get line info page: %s", err)
 	}
@@ -126,7 +125,7 @@ func LookupStop(settings *htmlparsing.Settings, id int) (*StopData, error) {
 	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.x"] = fmt.Sprintf("%d", rand.Intn(53))
 	parameters["ctl00$ContentPlaceHolder1$btnSearchLine.y"] = fmt.Sprintf("%d", rand.Intn(16))
 
-	page, err = client.ParsePage(pageURL, urlValues(parameters))
+	page, err = client.ParsePage(pageURL, htmlparsing.URLValues(parameters))
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse selection page: %s", err)
 	}
@@ -311,14 +310,4 @@ func getFormValues(page xml.Node) (map[string]string, error) {
 	}
 
 	return hiddenValues, nil
-}
-
-func urlValues(parameters map[string]string) url.Values {
-	values := make(url.Values)
-
-	for key := range parameters {
-		values.Set(key, parameters[key])
-	}
-
-	return values
 }
