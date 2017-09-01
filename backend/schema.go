@@ -69,9 +69,9 @@ const dropSchema = `
 `
 
 const clearTransportSchema = `
-	delete from arrival;
-	delete from route_stop;
-	delete from route;
-	delete from stop;
-	delete from line;
+	truncate arrival cascade;
+	truncate route_stop cascade;
+	truncate route cascade;
+	truncate stop cascade;
+	truncate line cascade;
 `
