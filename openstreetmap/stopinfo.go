@@ -3,10 +3,12 @@ package openstreetmap
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
 
 	"github.com/DexterLB/htmlparsing"
+	"github.com/DexterLB/skgt_api/common"
 	"github.com/jbowtie/gokogiri"
 	"github.com/jbowtie/gokogiri/xml"
 )
@@ -53,6 +55,38 @@ type Stop struct {
 	InternationalName string
 	Latitude          float64
 	Longitude         float64
+}
+
+func UpdateStopsInfo(
+	settings *htmlparsing.Settings,
+	stops []*common.Stop,
+) error {
+	osmStops, err := GetStops(settings)
+	if err != nil {
+		return fmt.Errorf("unable to get OpenStreetMap stop data: %s", err)
+	}
+
+	for i := range stops {
+		if osmStop, ok := osmStops[stops[i].ID]; ok {
+			stops[i].Latitude = osmStop.Latitude
+			stops[i].Longitude = osmStop.Longitude
+			if len(osmStop.Name) > 0 {
+				stops[i].CommunityName = osmStop.Name
+			} else {
+				stops[i].CommunityName = stops[i].Name
+			}
+
+			if len(osmStop.Name) > 0 {
+				stops[i].InternationalName = osmStop.InternationalName
+			} else {
+				stops[i].InternationalName = stops[i].CommunityName
+			}
+		} else {
+			log.Printf("warning: stop %d missing in OSM", stops[i].ID)
+		}
+	}
+
+	return nil
 }
 
 // GetStops gets all stops

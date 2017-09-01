@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/DexterLB/htmlparsing"
+	"github.com/DexterLB/skgt_api/openstreetmap"
 	"github.com/DexterLB/skgt_api/realtime"
 	"github.com/DexterLB/skgt_api/schedules"
 	"github.com/urfave/cli"
@@ -41,6 +42,17 @@ func runUpdate(c *cli.Context) error {
 
 	if err != nil {
 		return fmt.Errorf("unable to get stops: %s", err)
+	}
+
+	log.Printf("getting OpenStreetMap data")
+	err = openstreetmap.UpdateStopsInfo(
+		htmlparsing.SensibleSettings(),
+		stopInfos,
+	)
+	log.Printf("finished geting OpenStreetMap data")
+
+	if err != nil {
+		return fmt.Errorf("unable to get OpenStreetMap data: %s", err)
 	}
 
 	log.Printf("depositing data to database")
