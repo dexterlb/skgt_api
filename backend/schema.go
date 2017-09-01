@@ -18,7 +18,7 @@ const schema = `
 		name varchar(1024),
 		description varchar(2048),
 		latitude real,
-		longtitude real
+		longitude real
 	);
 
 	create table line(

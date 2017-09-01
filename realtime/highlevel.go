@@ -166,7 +166,7 @@ func UpdateStopInfo(settings *htmlparsing.Settings, info *common.Stop) error {
 	}
 
 	info.Description = newInfo.Description
-	info.Longtitude = newInfo.Longtitude
+	info.Longitude = newInfo.Longitude
 	info.Latitude = newInfo.Latitude
 
 	return nil

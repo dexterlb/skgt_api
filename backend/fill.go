@@ -40,8 +40,8 @@ func (b *Backend) Fill(stops []*common.Stop, timetables []*schedules.Timetable) 
 
 func insertStop(tx *sqlx.Tx, stop *common.Stop) error {
 	_, err := tx.NamedExec(
-		`insert into stop(id, name, description, latitude, longtitude)
-	     values (:id, :name, :description, :latitude, :longtitude)`,
+		`insert into stop(id, name, description, latitude, longitude)
+	     values (:id, :name, :description, :latitude, :longitude)`,
 		stop,
 	)
 	return err
