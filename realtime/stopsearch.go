@@ -55,7 +55,7 @@ func (s *StopData) Arrivals(lineID int) ([]*Arrival, error) {
 	}
 
 	rows, err := page.Search(
-		`//table[contains(@id,"ctl00_ContentPlaceHolder1_gvTimes")]/tr[not(contains(@class, "Header"))]`,
+		`//table[contains(@id,"ContentPlaceHolder1_gvTimes")]/tr[not(contains(@class, "Header"))]`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get arrivals table rows: %s", err)
